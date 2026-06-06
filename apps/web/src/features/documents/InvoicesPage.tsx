@@ -2,13 +2,13 @@ import { Download, Mail, Printer, ReceiptIndianRupee } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { api, ApiError } from "../../lib/api";
+import { can } from "../../lib/permissions";
 import type { InvoiceListItem, PurchaseOrderListItem } from "../../lib/types";
 
 export function InvoicesPage({ token }: { token: string }) {
   const { user } = useAuth();
-  const isVendor = user?.role === "vendor";
-  const canGenerateInvoice = !isVendor;
-  const canMarkPayable = !isVendor;
+  const canGenerateInvoice = can(user?.role, "generateInvoice");
+  const canMarkPayable = can(user?.role, "markInvoicePayable");
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [orders, setOrders] = useState<PurchaseOrderListItem[]>([]);
   const [error, setError] = useState<string | null>(null);

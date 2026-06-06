@@ -38,6 +38,11 @@ def _ensure_po_access(db: Session, po: PurchaseOrder, actor: User, *, manage: bo
                 detail="Vendor cannot access this purchase order",
             )
         return
+    if manage and actor.role == UserRole.admin.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admins do not manage purchase order fulfillment",
+        )
     if manage and actor.role not in {
         UserRole.admin.value,
         UserRole.procurement_officer.value,
@@ -131,7 +136,7 @@ def post_accept_po(
     po_id: int,
     payload: POAcceptanceRequest,
     db: Session = Depends(get_db),
-    actor: User = Depends(get_current_user),
+    actor: User = Depends(require_roles(UserRole.vendor)),
 ) -> PurchaseOrderRead:
     po = db.get(PurchaseOrder, po_id)
     if po is None:
@@ -150,7 +155,7 @@ def post_reject_po(
     po_id: int,
     payload: POAcceptanceRequest,
     db: Session = Depends(get_db),
-    actor: User = Depends(get_current_user),
+    actor: User = Depends(require_roles(UserRole.vendor)),
 ) -> PurchaseOrderRead:
     po = db.get(PurchaseOrder, po_id)
     if po is None:
@@ -169,7 +174,7 @@ def post_request_modification(
     po_id: int,
     payload: POAcceptanceRequest,
     db: Session = Depends(get_db),
-    actor: User = Depends(get_current_user),
+    actor: User = Depends(require_roles(UserRole.vendor)),
 ) -> PurchaseOrderRead:
     po = db.get(PurchaseOrder, po_id)
     if po is None:
@@ -188,7 +193,7 @@ def post_delivery_update(
     po_id: int,
     payload: DeliveryUpdateRequest,
     db: Session = Depends(get_db),
-    actor: User = Depends(get_current_user),
+    actor: User = Depends(require_roles(UserRole.vendor)),
 ) -> PurchaseOrderRead:
     po = db.get(PurchaseOrder, po_id)
     if po is None:

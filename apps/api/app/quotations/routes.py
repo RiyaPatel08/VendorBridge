@@ -48,11 +48,19 @@ def _quotation_read(db: Session, quotation: Quotation) -> QuotationRead:
 @router.get("/quotations", response_model=list[QuotationListItem])
 def list_quotations(
     db: Session = Depends(get_db),
-    _: User = Depends(
-        require_roles(UserRole.admin, UserRole.procurement_officer, UserRole.manager)
-    ),
+    actor: User = Depends(get_current_user),
 ) -> list[QuotationListItem]:
-    quotations = db.scalars(select(Quotation).order_by(Quotation.created_at.desc())).all()
+    query = select(Quotation).order_by(Quotation.created_at.desc())
+    if actor.role == UserRole.vendor.value:
+        vendor = db.scalar(select(Vendor).where(Vendor.contact_email == actor.email))
+        if vendor is None:
+            return []
+        query = query.where(Quotation.vendor_id == vendor.id)
+    elif actor.role not in {UserRole.procurement_officer.value, UserRole.manager.value}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough privileges"
+        )
+    quotations = db.scalars(query).all()
     rows = []
     for quotation in quotations:
         rfq = db.get(RFQ, quotation.rfq_id)
@@ -80,7 +88,7 @@ def list_quotations(
 def save_quotation_draft(
     payload: QuotationDraft,
     db: Session = Depends(get_db),
-    actor: User = Depends(get_current_user),
+    actor: User = Depends(require_roles(UserRole.vendor)),
 ) -> QuotationRead:
     quotation = upsert_quotation(db, payload, actor)
     db.commit()
@@ -92,7 +100,7 @@ def save_quotation_draft(
 def post_submit_quotation(
     quotation_id: int,
     db: Session = Depends(get_db),
-    actor: User = Depends(get_current_user),
+    actor: User = Depends(require_roles(UserRole.vendor)),
 ) -> QuotationRead:
     quotation = db.get(Quotation, quotation_id)
     if quotation is None:
@@ -107,11 +115,21 @@ def post_submit_quotation(
 def get_quotation(
     quotation_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    actor: User = Depends(get_current_user),
 ) -> QuotationRead:
     quotation = db.get(Quotation, quotation_id)
     if quotation is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quotation not found")
+    if actor.role == UserRole.vendor.value:
+        vendor = db.scalar(select(Vendor).where(Vendor.contact_email == actor.email))
+        if vendor is None or quotation.vendor_id != vendor.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access this quotation"
+            )
+    elif actor.role not in {UserRole.procurement_officer.value, UserRole.manager.value}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not enough privileges"
+        )
     return _quotation_read(db, quotation)
 
 
@@ -120,7 +138,7 @@ def compare_rfq_quotations(
     rfq_id: int,
     db: Session = Depends(get_db),
     _: User = Depends(
-        require_roles(UserRole.admin, UserRole.procurement_officer, UserRole.manager)
+        require_roles(UserRole.procurement_officer, UserRole.manager)
     ),
 ) -> ComparisonResponse:
     rfq = db.get(RFQ, rfq_id)

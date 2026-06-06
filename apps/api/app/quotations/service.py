@@ -50,10 +50,7 @@ def _ensure_vendor_invited(db: Session, rfq_id: int, vendor_id: int) -> None:
 def vendor_for_user(db: Session, user: User) -> Vendor | None:
     if user.role != UserRole.vendor.value:
         return None
-    vendor = db.scalar(select(Vendor).where(Vendor.contact_email == user.email))
-    if vendor:
-        return vendor
-    return db.scalar(select(Vendor).where(Vendor.status == "active").order_by(Vendor.id.asc()))
+    return db.scalar(select(Vendor).where(Vendor.contact_email == user.email))
 
 
 def upsert_quotation(db: Session, payload: QuotationDraft, actor: User) -> Quotation:
@@ -66,12 +63,16 @@ def upsert_quotation(db: Session, payload: QuotationDraft, actor: User) -> Quota
         )
     _deadline_guard(rfq)
 
-    if actor.role == UserRole.vendor.value:
-        vendor = vendor_for_user(db, actor)
-        if vendor is None or vendor.id != payload.vendor_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Cannot quote for this vendor"
-            )
+    if actor.role != UserRole.vendor.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only invited vendors can submit quotations",
+        )
+    vendor = vendor_for_user(db, actor)
+    if vendor is None or vendor.status != "active" or vendor.id != payload.vendor_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Cannot quote for this vendor"
+        )
     _ensure_vendor_invited(db, payload.rfq_id, payload.vendor_id)
 
     quotation = db.scalar(
@@ -181,12 +182,16 @@ def submit_quotation(db: Session, quotation: Quotation, actor: User) -> Quotatio
     if rfq is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="RFQ not found")
     _deadline_guard(rfq)
-    if actor.role == UserRole.vendor.value:
-        vendor = vendor_for_user(db, actor)
-        if vendor is None or vendor.id != quotation.vendor_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Cannot submit this quotation"
-            )
+    if actor.role != UserRole.vendor.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the vendor can submit this quotation",
+        )
+    vendor = vendor_for_user(db, actor)
+    if vendor is None or vendor.status != "active" or vendor.id != quotation.vendor_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Cannot submit this quotation"
+        )
     quotation.status = QuotationStatus.submitted.value
     quotation.submitted_at = now_utc()
     db.flush()

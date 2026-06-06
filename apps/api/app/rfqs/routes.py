@@ -29,12 +29,13 @@ from app.rfqs.service import create_rfq, select_quotation_for_approval, send_rfq
 router = APIRouter(prefix="/rfqs", tags=["rfqs"])
 
 
-def _rfq_read(db: Session, rfq: RFQ) -> RFQRead:
+def _rfq_read(db: Session, rfq: RFQ, visible_vendor_id: int | None = None) -> RFQRead:
     category = db.get(VendorCategory, rfq.category_id)
     items = db.scalars(select(RFQItem).where(RFQItem.rfq_id == rfq.id).order_by(RFQItem.id)).all()
-    invites = db.scalars(
-        select(RFQVendorInvite).where(RFQVendorInvite.rfq_id == rfq.id).order_by(RFQVendorInvite.id)
-    ).all()
+    invite_query = select(RFQVendorInvite).where(RFQVendorInvite.rfq_id == rfq.id)
+    if visible_vendor_id is not None:
+        invite_query = invite_query.where(RFQVendorInvite.vendor_id == visible_vendor_id)
+    invites = db.scalars(invite_query.order_by(RFQVendorInvite.id)).all()
     invite_reads = []
     for invite in invites:
         vendor = db.get(Vendor, invite.vendor_id)
@@ -122,7 +123,7 @@ def list_vendor_rfqs(
         ).all()
     ]
     rfqs = db.scalars(select(RFQ).where(RFQ.id.in_(rfq_ids)).order_by(RFQ.created_at.desc())).all()
-    return [_rfq_read(db, rfq) for rfq in rfqs]
+    return [_rfq_read(db, rfq, visible_vendor_id=vendor.id) for rfq in rfqs]
 
 
 @router.post("", response_model=RFQRead, status_code=status.HTTP_201_CREATED)
@@ -141,11 +142,28 @@ def post_rfq(
 def get_rfq(
     rfq_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    actor: User = Depends(get_current_user),
 ) -> RFQRead:
     rfq = db.get(RFQ, rfq_id)
     if rfq is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="RFQ not found")
+    if actor.role == UserRole.vendor.value:
+        vendor = vendor_for_user(db, actor)
+        if vendor is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Vendor profile is not active"
+            )
+        invited = db.scalar(
+            select(RFQVendorInvite).where(
+                RFQVendorInvite.rfq_id == rfq.id,
+                RFQVendorInvite.vendor_id == vendor.id,
+            )
+        )
+        if invited is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Vendor is not invited to this RFQ"
+            )
+        return _rfq_read(db, rfq, visible_vendor_id=vendor.id)
     return _rfq_read(db, rfq)
 
 

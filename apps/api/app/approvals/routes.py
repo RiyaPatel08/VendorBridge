@@ -46,7 +46,7 @@ def _approval_read(db: Session, approval: ApprovalRequest) -> ApprovalRead:
 @router.get("", response_model=list[ApprovalListItem])
 def list_approvals(
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.admin, UserRole.manager, UserRole.finance_manager)),
+    _: User = Depends(require_roles(UserRole.manager, UserRole.finance_manager)),
 ) -> list[ApprovalListItem]:
     approvals = db.scalars(
         select(ApprovalRequest).order_by(ApprovalRequest.created_at.desc())
@@ -74,7 +74,7 @@ def list_approvals(
 def get_approval(
     approval_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.admin, UserRole.manager, UserRole.finance_manager)),
+    _: User = Depends(require_roles(UserRole.manager, UserRole.finance_manager)),
 ) -> ApprovalRead:
     approval = db.get(ApprovalRequest, approval_id)
     if approval is None:

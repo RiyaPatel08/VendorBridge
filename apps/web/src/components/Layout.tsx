@@ -2,32 +2,22 @@ import {
   Activity,
   BarChart3,
   Bell,
+  ChevronDown,
   ClipboardList,
   FileText,
   Home,
   LogOut,
+  Menu,
   ReceiptIndianRupee,
   ShieldCheck,
   ShoppingCart,
   Store,
-  ChevronDown,
-  Menu,
   X,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../features/auth/AuthContext";
+import { ROLE_VIEWS, roleBadgeColor, roleLabel, type ViewKey } from "../lib/permissions";
 import type { UserRole } from "../lib/types";
-
-export type ViewKey =
-  | "dashboard"
-  | "vendors"
-  | "rfqs"
-  | "quotations"
-  | "approvals"
-  | "purchaseOrders"
-  | "invoices"
-  | "reports"
-  | "activity";
 
 type NavItem = { key: ViewKey; label: string; icon: typeof Home };
 
@@ -42,41 +32,6 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { key: "reports", label: "Reports", icon: BarChart3 },
   { key: "activity", label: "Activity", icon: Activity },
 ];
-
-const ROLE_NAV: Record<UserRole, ViewKey[]> = {
-  // Admin: platform oversight only — can VIEW but not act on RFQs or approvals
-  admin: ["dashboard", "vendors", "rfqs", "approvals", "reports", "activity"],
-  // Procurement Officer: full procurement lifecycle except approving
-  procurement_officer: ["dashboard", "vendors", "rfqs", "quotations", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
-  // Manager / Approver: reviews RFQs & quotations, approves/rejects requests
-  manager: ["dashboard", "rfqs", "quotations", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
-  // Finance Manager (legacy sub-role of manager)
-  finance_manager: ["dashboard", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
-  // Vendor: receive RFQs, submit quotations, manage orders
-  vendor: ["dashboard", "rfqs", "quotations", "purchaseOrders", "invoices", "activity"],
-};
-
-function roleLabel(role: UserRole): string {
-  const map: Record<UserRole, string> = {
-    admin: "Admin",
-    procurement_officer: "Procurement Officer",
-    manager: "Manager",
-    finance_manager: "Finance Manager",
-    vendor: "Vendor",
-  };
-  return map[role] ?? role;
-}
-
-function roleBadgeColor(role: UserRole): string {
-  const map: Record<UserRole, string> = {
-    admin: "bg-primary/10 text-primary border-primary/20",
-    procurement_officer: "bg-secondary/10 text-secondary border-secondary/20",
-    manager: "bg-tertiary/10 text-tertiary border-tertiary/20",
-    finance_manager: "bg-[#00a09d]/10 text-[#00a09d] border-[#00a09d]/20",
-    vendor: "bg-primary-container/40 text-on-primary-container border-primary-container",
-  };
-  return map[role] ?? "bg-surface-container text-on-surface-variant border-outline-variant";
-}
 
 export function Layout({
   activeView,
@@ -94,12 +49,12 @@ export function Layout({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const role = (user?.role ?? "vendor") as UserRole;
-  const allowedKeys = ROLE_NAV[role] ?? ROLE_NAV.vendor;
+  const allowedKeys = ROLE_VIEWS[role] ?? ROLE_VIEWS.vendor;
   const navItems = ALL_NAV_ITEMS.filter((item) => allowedKeys.includes(item.key));
+  const showApprovalBadge = allowedKeys.includes("approvals") && pendingApprovals && pendingApprovals > 0;
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      {/* Brand */}
       <div className="px-4 py-5 border-b border-outline-variant">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary text-sm font-bold">
@@ -112,11 +67,10 @@ export function Layout({
         </div>
       </div>
 
-      {/* Nav items */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 flex flex-col gap-0.5">
         {navItems.map((item) => {
           const isActive = activeView === item.key;
-          const hasBadge = item.key === "approvals" && pendingApprovals && pendingApprovals > 0;
+          const hasBadge = item.key === "approvals" && showApprovalBadge;
           return (
             <button
               key={item.key}
@@ -142,19 +96,20 @@ export function Layout({
         })}
       </nav>
 
-      {/* Create RFQ CTA — only for procurement officers */}
       {role === "procurement_officer" && (
         <div className="px-3 pb-3 pt-2 border-t border-outline-variant">
           <button
             className="w-full bg-primary text-on-primary py-2.5 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-            onClick={() => { onViewChange("rfqs"); setMobileSidebarOpen(false); }}
+            onClick={() => {
+              onViewChange("rfqs");
+              setMobileSidebarOpen(false);
+            }}
           >
             + Create RFQ
           </button>
         </div>
       )}
 
-      {/* Footer */}
       <div className="px-2 py-2 border-t border-outline-variant">
         <button
           className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors text-sm"
@@ -169,12 +124,10 @@ export function Layout({
 
   return (
     <div className="min-h-screen bg-background text-on-surface font-sans">
-      {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden lg:flex w-sidebar_width bg-surface-container-lowest border-r border-outline-variant shadow-sm z-30 flex-col">
         <SidebarContent />
       </aside>
 
-      {/* Mobile sidebar overlay */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-40 flex lg:hidden">
           <div
@@ -193,11 +146,8 @@ export function Layout({
         </div>
       )}
 
-      {/* Main area */}
       <div className="lg:ml-sidebar_width flex flex-col min-h-screen">
-        {/* Topbar */}
         <header className="sticky top-0 z-20 h-topbar_height bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-4 gap-4">
-          {/* Mobile menu toggle */}
           <button
             className="lg:hidden p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high"
             onClick={() => setMobileSidebarOpen(true)}
@@ -205,7 +155,6 @@ export function Layout({
             <Menu size={22} />
           </button>
 
-          {/* Search bar */}
           <div className="hidden md:flex flex-1 max-w-md relative items-center">
             <svg
               className="absolute left-3 text-on-surface-variant pointer-events-none w-4 h-4"
@@ -219,23 +168,21 @@ export function Layout({
             </svg>
             <input
               className="w-full bg-surface-container border border-outline-variant rounded-lg pl-10 pr-4 py-2 text-sm text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors"
-              placeholder="Search across ERP…"
+              placeholder="Search across ERP..."
               readOnly
             />
           </div>
 
-          {/* Page title on mobile */}
           <div className="flex-1 md:hidden">
             <p className="text-sm font-semibold text-on-surface">
               {navItems.find((i) => i.key === activeView)?.label ?? "VendorBridge"}
             </p>
           </div>
 
-          {/* Trailing actions */}
           <div className="flex items-center gap-2">
             <button className="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors">
               <Bell size={20} />
-              {pendingApprovals && pendingApprovals > 0 ? (
+              {showApprovalBadge ? (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full ring-2 ring-surface-container-lowest" />
               ) : null}
             </button>
@@ -268,7 +215,10 @@ export function Layout({
                   </div>
                   <button
                     className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors"
-                    onClick={() => { setUserMenuOpen(false); logout(); }}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      logout();
+                    }}
                   >
                     <LogOut size={16} />
                     Sign out
@@ -279,12 +229,8 @@ export function Layout({
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 p-container_padding">
-          {children}
-        </main>
+        <main className="flex-1 p-container_padding">{children}</main>
 
-        {/* Bottom status bar */}
         <div className="bg-surface-container-lowest border-t border-outline-variant px-6 py-2 flex items-center justify-between text-xs text-on-surface-variant">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5">
@@ -292,7 +238,7 @@ export function Layout({
               System Online
             </span>
           </div>
-          <span>VendorBridge IQ · BuzzBeatStrong</span>
+          <span>VendorBridge IQ - BuzzBeatStrong</span>
         </div>
       </div>
     </div>

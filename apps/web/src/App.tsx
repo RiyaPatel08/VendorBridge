@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Layout, type ViewKey } from "./components/Layout";
+import { Layout } from "./components/Layout";
 import { ActivityPage } from "./features/activity/ActivityPage";
 import { ApprovalsPage } from "./features/approvals/ApprovalsPage";
 import { AuthPage } from "./features/auth/AuthPage";
@@ -12,15 +12,8 @@ import { ReportsPage } from "./features/reports/ReportsPage";
 import { RfqsPage } from "./features/rfqs/RfqsPage";
 import { VendorsPage } from "./features/vendors/VendorsPage";
 import { api } from "./lib/api";
+import { canAccessView, defaultViewForRole, ROLE_VIEWS, type ViewKey } from "./lib/permissions";
 import type { UserRole } from "./lib/types";
-
-const ROLE_ALLOWED_VIEWS: Record<UserRole, ViewKey[]> = {
-  admin: ["dashboard", "vendors", "rfqs", "approvals", "reports", "activity"],
-  procurement_officer: ["dashboard", "vendors", "rfqs", "quotations", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
-  manager: ["dashboard", "rfqs", "quotations", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
-  finance_manager: ["dashboard", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
-  vendor: ["dashboard", "rfqs", "quotations", "purchaseOrders", "invoices", "activity"],
-};
 
 export function App() {
   const { token, user, loading } = useAuth();
@@ -28,22 +21,24 @@ export function App() {
   const [pendingApprovals, setPendingApprovals] = useState<number>(0);
 
   const role = (user?.role ?? "vendor") as UserRole;
-  const allowedViews = ROLE_ALLOWED_VIEWS[role] ?? ROLE_ALLOWED_VIEWS.vendor;
+  const allowedViews = ROLE_VIEWS[role] ?? ROLE_VIEWS.vendor;
 
   function handleViewChange(view: ViewKey) {
-    if (allowedViews.includes(view)) {
+    if (canAccessView(role, view)) {
       setActiveView(view);
     }
   }
 
-  // Load pending approvals count for badge
   useEffect(() => {
-    if (!token) return;
+    if (!token || !canAccessView(role, "approvals")) {
+      setPendingApprovals(0);
+      return;
+    }
     api
       .approvals(token)
       .then((list) => setPendingApprovals(list.filter((a) => a.status === "pending").length))
       .catch(() => {});
-  }, [token, activeView]);
+  }, [token, role, activeView]);
 
   if (loading) {
     return (
@@ -59,7 +54,7 @@ export function App() {
     return <AuthPage />;
   }
 
-  const safeView = allowedViews.includes(activeView) ? activeView : "dashboard";
+  const safeView = allowedViews.includes(activeView) ? activeView : defaultViewForRole(role);
 
   return (
     <Layout activeView={safeView} onViewChange={handleViewChange} pendingApprovals={pendingApprovals}>

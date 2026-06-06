@@ -2,6 +2,7 @@ import { CheckCircle2, MessageCircleWarning, PackageCheck, Truck, XCircle } from
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { api, ApiError } from "../../lib/api";
+import { can } from "../../lib/permissions";
 import type { PurchaseOrderListItem } from "../../lib/types";
 
 const nextDelivery: Record<string, string> = {
@@ -13,12 +14,9 @@ const nextDelivery: Record<string, string> = {
 
 export function PurchaseOrdersPage({ token }: { token: string }) {
   const { user } = useAuth();
-  const isVendor = user?.role === "vendor";
-  const isOfficer = user?.role === "procurement_officer";
-  const isManager = user?.role === "manager" || user?.role === "finance_manager";
-  const canAcceptReject = isVendor;
-  const canUpdateDelivery = isVendor || isOfficer;
-  const canReceive = isOfficer || isManager;
+  const canAcceptReject = can(user?.role, "acceptPurchaseOrder");
+  const canUpdateDelivery = can(user?.role, "updateDelivery");
+  const canReceive = can(user?.role, "receivePurchaseOrder");
   const [orders, setOrders] = useState<PurchaseOrderListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);

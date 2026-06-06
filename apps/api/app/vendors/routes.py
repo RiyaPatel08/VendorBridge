@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.common.dependencies import require_roles
-from app.common.enums import UserRole, VendorStatus
+from app.common.dependencies import get_current_user, require_roles
+from app.common.enums import LifecycleStage, UserRole, VendorStatus
 from app.db.session import get_db
 from app.models.entities import User, Vendor, VendorCategory
 from app.vendors.schemas import (
@@ -136,6 +136,10 @@ def vendor_self_register(
         compliance_notes=payload.compliance_notes,
     )
     vendor = create_vendor(db, vendor_create, current_user)
+    vendor.status = VendorStatus.pending.value
+    vendor.lifecycle_stage = LifecycleStage.potential.value
+    vendor.is_gstin_verified = False
+    vendor.is_pan_verified = False
     db.commit()
     db.refresh(vendor)
     return _vendor_read(vendor)
@@ -145,10 +149,47 @@ def vendor_self_register(
 def post_vendor(
     payload: VendorCreate,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.procurement_officer)),
+    actor: User = Depends(get_current_user),
 ) -> VendorRead:
-    """Officer-initiated vendor creation (for legacy / assisted onboarding)."""
-    vendor = create_vendor(db, payload, actor)
+    """Manual vendor creation is intentionally disabled.
+
+    Vendors must sign up themselves, then an admin verifies the pending profile.
+    Keeping this endpoint explicit makes older clients fail with a clear product
+    rule instead of quietly recreating the assisted ERP flow.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Vendors must self-register before admin verification",
+    )
+
+
+@router.get("/vendors/me", response_model=VendorRead)
+def get_my_vendor_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.vendor)),
+) -> VendorRead:
+    vendor = db.scalar(select(Vendor).where(Vendor.contact_email == current_user.email))
+    if vendor is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor profile not found")
+    return _vendor_read(vendor)
+
+
+@router.patch("/vendors/me", response_model=VendorRead)
+def patch_my_vendor_profile(
+    payload: VendorUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.vendor)),
+) -> VendorRead:
+    vendor = db.scalar(select(Vendor).where(Vendor.contact_email == current_user.email))
+    if vendor is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor profile not found")
+    original_gstin = vendor.gstin
+    original_pan = vendor.pan
+    update_vendor(db, vendor, payload, current_user)
+    if vendor.gstin != original_gstin or vendor.pan != original_pan:
+        vendor.status = VendorStatus.pending.value
+        vendor.is_gstin_verified = False
+        vendor.is_pan_verified = False
     db.commit()
     db.refresh(vendor)
     return _vendor_read(vendor)
@@ -173,7 +214,7 @@ def patch_vendor(
     vendor_id: int,
     payload: VendorUpdate,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.procurement_officer)),
+    actor: User = Depends(require_roles(UserRole.admin)),
 ) -> VendorRead:
     vendor = db.get(Vendor, vendor_id)
     if vendor is None:
@@ -198,6 +239,8 @@ def verify_vendor(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Vendor is already active"
         )
+    vendor.is_gstin_verified = True
+    vendor.is_pan_verified = vendor.pan is not None
     vendor = set_vendor_status(db, vendor, VendorStatus.active, actor)
     db.commit()
     db.refresh(vendor)

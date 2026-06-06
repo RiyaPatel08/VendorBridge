@@ -15,6 +15,7 @@ from app.models.entities import (
     Invoice,
     PurchaseOrder,
     Quotation,
+    RFQVendorInvite,
     User,
     Vendor,
     VendorCategory,
@@ -77,17 +78,52 @@ def _vendor_kpi_rows(db: Session) -> list[dict]:
 @router.get("/dashboard/stats")
 def dashboard_stats(
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    actor: User = Depends(get_current_user),
 ) -> dict:
-    vendor_count = db.scalar(select(func.count()).select_from(Vendor)) or 0
-    active_vendors = (
-        db.scalar(select(func.count()).select_from(Vendor).where(Vendor.status == "active")) or 0
-    )
-    rfq_count = db.scalar(select(func.count()).select_from(RFQ)) or 0
-    po_count = db.scalar(select(func.count()).select_from(PurchaseOrder)) or 0
-    invoice_count = db.scalar(select(func.count()).select_from(Invoice)) or 0
+    is_vendor_actor = actor.role == UserRole.vendor.value
+    vendor = None
+    rfq_id_filter: list[int] | None = None
+    if is_vendor_actor:
+        vendor = db.scalar(select(Vendor).where(Vendor.contact_email == actor.email))
+        if vendor is None:
+            rfq_id_filter = []
+        else:
+            rfq_id_filter = [
+                invite.rfq_id
+                for invite in db.scalars(
+                    select(RFQVendorInvite).where(RFQVendorInvite.vendor_id == vendor.id)
+                ).all()
+            ]
+
+    if is_vendor_actor:
+        vendor_count = 1 if vendor is not None else 0
+        active_vendors = 1 if vendor is not None and vendor.status == "active" else 0
+    else:
+        vendor_count = db.scalar(select(func.count()).select_from(Vendor)) or 0
+        active_vendors = (
+            db.scalar(select(func.count()).select_from(Vendor).where(Vendor.status == "active"))
+            or 0
+        )
+    rfq_query = select(func.count()).select_from(RFQ)
+    active_rfq_query = select(func.count()).select_from(RFQ).where(RFQ.status == "sent")
+    po_query = select(func.count()).select_from(PurchaseOrder)
+    invoice_query = select(func.count()).select_from(Invoice)
+    recent_po_query = select(PurchaseOrder).order_by(PurchaseOrder.created_at.desc()).limit(5)
+    recent_invoice_query = select(Invoice).order_by(Invoice.created_at.desc()).limit(5)
+    if rfq_id_filter is not None:
+        rfq_query = rfq_query.where(RFQ.id.in_(rfq_id_filter))
+        active_rfq_query = active_rfq_query.where(RFQ.id.in_(rfq_id_filter))
+    if vendor is not None:
+        po_query = po_query.where(PurchaseOrder.vendor_id == vendor.id)
+        invoice_query = invoice_query.where(Invoice.vendor_id == vendor.id)
+        recent_po_query = recent_po_query.where(PurchaseOrder.vendor_id == vendor.id)
+        recent_invoice_query = recent_invoice_query.where(Invoice.vendor_id == vendor.id)
+
+    rfq_count = db.scalar(rfq_query) or 0
+    po_count = db.scalar(po_query) or 0
+    invoice_count = db.scalar(invoice_query) or 0
     ledger_count = db.scalar(select(func.count()).select_from(ActivityLog)) or 0
-    pending_approvals = (
+    pending_approvals = 0 if is_vendor_actor else (
         db.scalar(
             select(func.count())
             .select_from(ApprovalRequest)
@@ -95,11 +131,9 @@ def dashboard_stats(
         )
         or 0
     )
-    active_rfqs = db.scalar(select(func.count()).select_from(RFQ).where(RFQ.status == "sent")) or 0
+    active_rfqs = db.scalar(active_rfq_query) or 0
     recent_pos = []
-    for po in db.scalars(
-        select(PurchaseOrder).order_by(PurchaseOrder.created_at.desc()).limit(5)
-    ).all():
+    for po in db.scalars(recent_po_query).all():
         vendor = db.get(Vendor, po.vendor_id)
         recent_pos.append(
             {
@@ -112,7 +146,7 @@ def dashboard_stats(
             }
         )
     recent_invoices = []
-    for invoice in db.scalars(select(Invoice).order_by(Invoice.created_at.desc()).limit(5)).all():
+    for invoice in db.scalars(recent_invoice_query).all():
         vendor = db.get(Vendor, invoice.vendor_id)
         recent_invoices.append(
             {
@@ -141,7 +175,7 @@ def dashboard_stats(
 @router.get("/reports/summary")
 def reports_summary(
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_roles(UserRole.admin, UserRole.procurement_officer, UserRole.manager)),
 ) -> dict:
     total_spend = db.scalar(select(func.coalesce(func.sum(Invoice.grand_total), 0))) or 0
     pending_approvals = (
@@ -215,7 +249,7 @@ def refresh_kpi_dashboard(
 @router.get("/reports/export.csv")
 def export_reports_csv(
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_roles(UserRole.admin, UserRole.procurement_officer, UserRole.manager)),
 ) -> Response:
     rows = ["vendor,status,lifecycle_stage,rating,completed_orders"]
     for vendor in db.scalars(select(Vendor).order_by(Vendor.name)).all():

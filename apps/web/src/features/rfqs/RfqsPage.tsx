@@ -3,11 +3,12 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { StatusBadge } from "../../components/Badge";
 import { useAuth } from "../auth/AuthContext";
 import { api, ApiError, type RFQPayload } from "../../lib/api";
+import { can } from "../../lib/permissions";
 import type { RFQListItem, Vendor, VendorCategory } from "../../lib/types";
 
 export function RfqsPage({ token }: { token: string }) {
   const { user } = useAuth();
-  const isOfficer = user?.role === "procurement_officer";
+  const isOfficer = can(user?.role, "createRfq");
   const [rfqs, setRfqs] = useState<RFQListItem[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [categories, setCategories] = useState<VendorCategory[]>([]);
@@ -28,12 +29,15 @@ export function RfqsPage({ token }: { token: string }) {
   });
 
   async function load() {
-    const [rfqRows, categoryRows, vendorRows] = await Promise.all([
-      api.rfqs(token),
+    const rfqRows = await api.rfqs(token);
+    setRfqs(rfqRows);
+    if (!isOfficer) {
+      return;
+    }
+    const [categoryRows, vendorRows] = await Promise.all([
       api.categories(token),
       api.vendors(token, new URLSearchParams({ page: "1", page_size: "50", status: "active" })),
     ]);
-    setRfqs(rfqRows);
     setCategories(categoryRows);
     setVendors(vendorRows.items);
     setForm((current) => ({
@@ -135,6 +139,9 @@ export function RfqsPage({ token }: { token: string }) {
                     {vendor.name}
                   </label>
                 ))}
+                {vendors.length === 0 && (
+                  <p className="text-sm text-slate-500">No active self-registered vendors are available.</p>
+                )}
               </div>
             </div>
             <button className="btn-primary lg:col-span-1" disabled={busy || !form.category_id || form.vendor_ids.length === 0}>
@@ -182,10 +189,16 @@ export function RfqsPage({ token }: { token: string }) {
                 )}
               </tr>
             ))}
+            {rfqs.length === 0 && (
+              <tr>
+                <td className="px-4 py-10 text-center text-slate-500" colSpan={isOfficer ? 6 : 5}>
+                  No RFQs available for your role yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </section>
     </div>
   );
 }
-

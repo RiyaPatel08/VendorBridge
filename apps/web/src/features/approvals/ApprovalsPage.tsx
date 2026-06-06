@@ -2,12 +2,13 @@ import { Check, FilePlus2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { api, ApiError } from "../../lib/api";
+import { can } from "../../lib/permissions";
 import type { Approval, ApprovalListItem } from "../../lib/types";
 
 export function ApprovalsPage({ token }: { token: string }) {
   const { user } = useAuth();
-  const canApprove = user?.role === "manager" || user?.role === "finance_manager";
-  const canGeneratePo = user?.role === "manager" || user?.role === "finance_manager" || user?.role === "procurement_officer";
+  const canApprove = can(user?.role, "approvePurchases");
+  const canGeneratePo = can(user?.role, "generatePurchaseOrder");
   const [approvals, setApprovals] = useState<ApprovalListItem[]>([]);
   const [selected, setSelected] = useState<Approval | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -153,4 +154,3 @@ function Metric({ label, value }: { label: string; value: unknown }) {
     </div>
   );
 }
-

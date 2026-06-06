@@ -42,9 +42,15 @@ def _invoice_read(db: Session, invoice: Invoice) -> InvoiceRead:
 @router.get("/invoices", response_model=list[InvoiceListItem])
 def list_invoices(
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    actor: User = Depends(get_current_user),
 ) -> list[InvoiceListItem]:
-    invoices = db.scalars(select(Invoice).order_by(Invoice.created_at.desc())).all()
+    query = select(Invoice).order_by(Invoice.created_at.desc())
+    if actor.role == UserRole.vendor.value:
+        vendor = db.scalar(select(Vendor).where(Vendor.contact_email == actor.email))
+        if vendor is None:
+            return []
+        query = query.where(Invoice.vendor_id == vendor.id)
+    invoices = db.scalars(query).all()
     rows = []
     for invoice in invoices:
         po = db.get(PurchaseOrder, invoice.purchase_order_id)
@@ -68,11 +74,17 @@ def list_invoices(
 def get_invoice(
     invoice_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    actor: User = Depends(get_current_user),
 ) -> InvoiceRead:
     invoice = db.get(Invoice, invoice_id)
     if invoice is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    if actor.role == UserRole.vendor.value:
+        vendor = db.scalar(select(Vendor).where(Vendor.contact_email == actor.email))
+        if vendor is None or vendor.id != invoice.vendor_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access this invoice"
+            )
     return _invoice_read(db, invoice)
 
 
@@ -81,7 +93,7 @@ def post_generate_invoice(
     po_id: int,
     db: Session = Depends(get_db),
     actor: User = Depends(
-        require_roles(UserRole.admin, UserRole.procurement_officer, UserRole.manager)
+        require_roles(UserRole.procurement_officer, UserRole.manager)
     ),
 ) -> InvoiceRead:
     po = db.get(PurchaseOrder, po_id)
@@ -101,8 +113,6 @@ def post_mark_payable(
     db: Session = Depends(get_db),
     actor: User = Depends(
         require_roles(
-            UserRole.admin,
-            UserRole.procurement_officer,
             UserRole.manager,
             UserRole.finance_manager,
         )
@@ -126,6 +136,12 @@ def post_print_invoice(
     invoice = db.get(Invoice, invoice_id)
     if invoice is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    if actor.role == UserRole.vendor.value:
+        vendor = db.scalar(select(Vendor).where(Vendor.contact_email == actor.email))
+        if vendor is None or vendor.id != invoice.vendor_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access this invoice"
+            )
     log_invoice_action(db, invoice, actor, "printed")
     db.commit()
     return {"ok": True}
@@ -140,6 +156,12 @@ def download_invoice(
     invoice = db.get(Invoice, invoice_id)
     if invoice is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    if actor.role == UserRole.vendor.value:
+        vendor = db.scalar(select(Vendor).where(Vendor.contact_email == actor.email))
+        if vendor is None or vendor.id != invoice.vendor_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access this invoice"
+            )
     log_invoice_action(db, invoice, actor, "downloaded")
     db.commit()
     html = f"""
@@ -166,6 +188,12 @@ def post_email_invoice(
     invoice = db.get(Invoice, invoice_id)
     if invoice is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    if actor.role == UserRole.vendor.value:
+        vendor = db.scalar(select(Vendor).where(Vendor.contact_email == actor.email))
+        if vendor is None or vendor.id != invoice.vendor_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access this invoice"
+            )
     outbox = queue_invoice_email(db, invoice, actor, str(payload.to_email), payload.message)
     db.commit()
     db.refresh(outbox)
