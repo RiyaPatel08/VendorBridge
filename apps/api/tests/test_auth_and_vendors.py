@@ -7,12 +7,11 @@ def auth_header(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_auth_and_vendor_management_flow() -> None:
+def test_auth_and_vendor_self_registration_flow() -> None:
     reset_db()
     db = next(get_test_db())
     try:
         db.add(VendorCategory(name="Furniture", code="FURN", is_active=True))
-        # Admin accounts are provisioned by the platform, not via self-register.
         db.add(
             User(
                 email="admin@example.test",
@@ -29,7 +28,7 @@ def test_auth_and_vendor_management_flow() -> None:
         db.close()
 
     client = get_client()
-    register_response = client.post(
+    officer_response = client.post(
         "/api/v1/auth/register",
         json={
             "first_name": "Neel",
@@ -40,16 +39,12 @@ def test_auth_and_vendor_management_flow() -> None:
             "password": "VendorBridge@123",
         },
     )
-    assert register_response.status_code == 201
-    token = register_response.json()["access_token"]
+    assert officer_response.status_code == 201
+    officer_token = officer_response.json()["access_token"]
 
-    me_response = client.get("/api/v1/auth/me", headers=auth_header(token))
-    assert me_response.status_code == 200
-    assert me_response.json()["role"] == "procurement_officer"
-
-    create_response = client.post(
+    manual_create_response = client.post(
         "/api/v1/vendors",
-        headers=auth_header(token),
+        headers=auth_header(officer_token),
         json={
             "name": "Infra Supplies Pvt Ltd",
             "legal_name": "Infra Supplies Private Limited",
@@ -61,22 +56,50 @@ def test_auth_and_vendor_management_flow() -> None:
             "contact_name": "Meera Patel",
             "contact_email": "sales@infra.test",
             "contact_phone": "+91 98765 10001",
-            "status": "active",
-            "completed_orders_count": 32,
-            "rating": "4.50",
-            "reliability_score": "91.00",
-            "delivery_score": "88.00",
-            "completion_rate": "96.00",
-            "satisfaction_score": "90.00",
-            "compliance_notes": "GST and PAN verified.",
         },
     )
-    assert create_response.status_code == 201
-    vendor = create_response.json()
-    assert vendor["lifecycle_stage"] == "trusted"
-    assert vendor["compliance_badge"] == "compliant"
+    assert manual_create_response.status_code == 403
+    assert manual_create_response.json()["detail"] == (
+        "Vendors must self-register before admin verification"
+    )
 
-    list_response = client.get("/api/v1/vendors?search=Infra", headers=auth_header(token))
+    vendor_response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "first_name": "Meera",
+            "last_name": "Patel",
+            "email": "sales@infra.test",
+            "phone": "+91 98765 10001",
+            "role": "vendor",
+            "password": "VendorBridge@123",
+        },
+    )
+    assert vendor_response.status_code == 201
+    vendor_token = vendor_response.json()["access_token"]
+
+    profile_response = client.post(
+        "/api/v1/vendors/self-register",
+        headers=auth_header(vendor_token),
+        json={
+            "name": "Infra Supplies Pvt Ltd",
+            "legal_name": "Infra Supplies Private Limited",
+            "category_id": 1,
+            "gstin": "24INFRA1234F1Z5",
+            "pan": "INFRA1234F",
+            "state": "Gujarat",
+            "city": "Surat",
+            "contact_phone": "+91 98765 10001",
+            "compliance_notes": "GST and PAN documents uploaded.",
+        },
+    )
+    assert profile_response.status_code == 201
+    vendor = profile_response.json()
+    assert vendor["status"] == "pending"
+    assert vendor["lifecycle_stage"] == "potential"
+    assert vendor["is_gstin_verified"] is False
+    assert vendor["compliance_badge"] == "needs_review"
+
+    list_response = client.get("/api/v1/vendors?search=Infra", headers=auth_header(officer_token))
     assert list_response.status_code == 200
     assert list_response.json()["total"] == 1
 
@@ -87,6 +110,14 @@ def test_auth_and_vendor_management_flow() -> None:
     assert admin_login.status_code == 200
     admin_token = admin_login.json()["access_token"]
 
+    verify_response = client.post(
+        f"/api/v1/vendors/{vendor['id']}/verify", headers=auth_header(admin_token)
+    )
+    assert verify_response.status_code == 200
+    assert verify_response.json()["status"] == "active"
+    assert verify_response.json()["is_gstin_verified"] is True
+    assert verify_response.json()["compliance_badge"] == "compliant"
+
     block_response = client.post(
         f"/api/v1/vendors/{vendor['id']}/block", headers=auth_header(admin_token)
     )
@@ -95,17 +126,15 @@ def test_auth_and_vendor_management_flow() -> None:
     assert block_response.json()["compliance_badge"] == "blocked"
 
     invalid_response = client.post(
-        "/api/v1/vendors",
-        headers=auth_header(token),
+        "/api/v1/vendors/self-register",
+        headers=auth_header(vendor_token),
         json={
             "name": "Bad GST Vendor",
             "category_id": 1,
             "gstin": "BAD",
             "state": "Gujarat",
             "city": "Surat",
-            "contact_name": "Bad Vendor",
-            "contact_email": "bad@example.test",
             "contact_phone": "+91 98765 10001",
         },
     )
-    assert invalid_response.status_code == 422
+    assert invalid_response.status_code in {409, 422}

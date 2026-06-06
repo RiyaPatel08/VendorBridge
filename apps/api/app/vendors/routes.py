@@ -134,6 +134,7 @@ def vendor_self_register(
         completion_rate=Decimal("0.00"),
         satisfaction_score=Decimal("0.00"),
         compliance_notes=payload.compliance_notes,
+        custom_attributes=payload.custom_attributes,
     )
     vendor = create_vendor(db, vendor_create, current_user)
     vendor.status = VendorStatus.pending.value

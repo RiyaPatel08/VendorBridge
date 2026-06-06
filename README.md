@@ -37,7 +37,23 @@ All demo users use the password `VendorBridge@123`.
 | Procurement Officer | `officer@vendorbridge.test` |
 | Manager | `rahul.mehta@vendorbridge.test` |
 | Finance Manager | `priya.shah@vendorbridge.test` |
-| Vendor | `vendor@infrasupplies.test` |
+| Vendor (Infra Supplies) | `vendor@infrasupplies.test` |
+| Vendor (TechCore) | `quotes@techcore.test` |
+| Vendor (OfficeNeed) | `hello@officeneed.test` |
+| Vendor (GlobalIT — Preferred) | `vendor@globalit.test` |
+| Vendor (GreenDesk — New) | `sales@greendesk.test` |
+| Vendor (FastLog — Logistics) | `ops@fastlog.test` |
+
+### Reset demo data
+
+For a clean demo dataset (9 RFQs, 7 vendors, 4 POs, 3 invoices, approvals at every stage):
+
+```powershell
+cd apps/api
+python -m app.seed --fresh
+```
+
+Use `--fresh` to wipe transactional data and re-seed. Without it, seed is idempotent and skips scenarios that already exist.
 
 ## Milestone Coverage
 

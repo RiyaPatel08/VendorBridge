@@ -16,27 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from app.db.optimizations import is_postgres, refresh_vendor_kpis, set_rls_context
 from app.models.entities import Invoice
 from app.vendors.service import build_vendor_query
-from tests.conftest import get_client, get_test_db, reset_db
-
-
-def auth_header(token: str) -> dict[str, str]:
-    return {"Authorization": f"Bearer {token}"}
-
-
-def _officer_token(client) -> str:
-    response = client.post(
-        "/api/v1/auth/register",
-        json={
-            "first_name": "Neel",
-            "last_name": "Shah",
-            "email": "officer@example.test",
-            "phone": "+91 90000 00000",
-            "role": "procurement_officer",
-            "password": "VendorBridge@123",
-        },
-    )
-    assert response.status_code == 201
-    return response.json()["access_token"]
+from tests.conftest import get_test_db, reset_db
 
 
 def test_helpers_degrade_gracefully_on_sqlite() -> None:
@@ -69,37 +49,33 @@ def test_custom_attributes_round_trip() -> None:
     reset_db()
     db = next(get_test_db())
     try:
-        from app.models.entities import VendorCategory
+        from app.models.entities import Vendor, VendorCategory
 
         db.add(VendorCategory(name="Furniture", code="FURN", is_active=True))
+        db.flush()
+        db.add(
+            Vendor(
+                name="Infra Supplies Pvt Ltd",
+                category_id=1,
+                gstin="24INFRA1234F1Z5",
+                pan="INFRA1234F",
+                state="Gujarat",
+                city="Surat",
+                contact_name="Meera Patel",
+                contact_email="sales@infra.test",
+                contact_phone="+91 98765 10001",
+                status="active",
+                custom_attributes={"iso_certified": True, "msme_registration": "UDYAM-1"},
+            )
+        )
         db.commit()
+        vendor = db.query(Vendor).filter_by(gstin="24INFRA1234F1Z5").one()
+        assert vendor.custom_attributes == {
+            "iso_certified": True,
+            "msme_registration": "UDYAM-1",
+        }
     finally:
         db.close()
-
-    client = get_client()
-    token = _officer_token(client)
-    response = client.post(
-        "/api/v1/vendors",
-        headers=auth_header(token),
-        json={
-            "name": "Infra Supplies Pvt Ltd",
-            "category_id": 1,
-            "gstin": "24INFRA1234F1Z5",
-            "pan": "INFRA1234F",
-            "state": "Gujarat",
-            "city": "Surat",
-            "contact_name": "Meera Patel",
-            "contact_email": "sales@infra.test",
-            "contact_phone": "+91 98765 10001",
-            "status": "active",
-            "custom_attributes": {"iso_certified": True, "msme_registration": "UDYAM-1"},
-        },
-    )
-    assert response.status_code == 201
-    assert response.json()["custom_attributes"] == {
-        "iso_certified": True,
-        "msme_registration": "UDYAM-1",
-    }
 
 
 def test_invoice_three_way_match_check_constraint() -> None:

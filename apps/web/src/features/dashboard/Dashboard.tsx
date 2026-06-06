@@ -46,6 +46,8 @@ export function Dashboard({ token }: { token: string }) {
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
+  const role = user?.role;
+  const isApprover = role === "manager" || role === "finance_manager";
 
   useEffect(() => {
     api
@@ -56,8 +58,8 @@ export function Dashboard({ token }: { token: string }) {
 
   const statCards = [
     {
-      label: "Active RFQs",
-      value: stats.active_rfqs,
+      label: role === "vendor" ? "RFQs Received" : "Active RFQs",
+      value: role === "vendor" ? stats.rfqs : stats.active_rfqs,
       accent: "border-l-primary",
       iconBg: "bg-primary/10 text-primary",
       icon: (
@@ -78,8 +80,8 @@ export function Dashboard({ token }: { token: string }) {
       ),
     },
     {
-      label: "Total Spend (POs)",
-      value: `₹${(stats.purchase_orders * 0).toLocaleString("en-IN")}`,
+      label: "Purchase Orders",
+      value: stats.purchase_orders,
       accent: "border-l-secondary",
       iconBg: "bg-secondary/10 text-secondary",
       icon: (
@@ -89,7 +91,7 @@ export function Dashboard({ token }: { token: string }) {
       ),
     },
     {
-      label: "Unpaid Invoices",
+      label: "Invoices",
       value: stats.invoices,
       accent: "border-l-tertiary",
       iconBg: "bg-tertiary/10 text-tertiary",
@@ -99,7 +101,36 @@ export function Dashboard({ token }: { token: string }) {
         </svg>
       ),
     },
-  ];
+  ].filter((card) => isApprover || card.label !== "Pending Approvals");
+
+  const summaryCards =
+    role === "vendor"
+      ? [
+          { label: "My RFQs", value: stats.rfqs },
+          { label: "My Purchase Orders", value: stats.purchase_orders },
+          { label: "My Invoices", value: stats.invoices },
+          { label: "Active Profile", value: stats.active_vendors ? "Yes" : "No" },
+        ]
+      : role === "admin"
+        ? [
+            { label: "Total Vendors", value: stats.vendors },
+            { label: "Active Vendors", value: stats.active_vendors },
+            { label: "Total RFQs", value: stats.rfqs },
+            { label: "Ledger Entries", value: stats.ledger_entries },
+          ]
+        : isApprover
+          ? [
+              { label: "Pending Approvals", value: stats.pending_approvals },
+              { label: "Total RFQs", value: stats.rfqs },
+              { label: "Purchase Orders", value: stats.purchase_orders },
+              { label: "Invoices", value: stats.invoices },
+            ]
+          : [
+              { label: "Active Vendors", value: stats.active_vendors },
+              { label: "Total RFQs", value: stats.rfqs },
+              { label: "Purchase Orders", value: stats.purchase_orders },
+              { label: "Invoices", value: stats.invoices },
+            ];
 
   return (
     <div className="space-y-6">
@@ -224,12 +255,7 @@ export function Dashboard({ token }: { token: string }) {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: "Total Vendors", value: stats.vendors },
-          { label: "Active Vendors", value: stats.active_vendors },
-          { label: "Total RFQs", value: stats.rfqs },
-          { label: "Ledger Entries", value: stats.ledger_entries },
-        ].map((item) => (
+        {summaryCards.map((item) => (
           <div key={item.label} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-card">
             <p className="text-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">{item.label}</p>
             <p className="font-title-sm text-title-sm text-on-surface mt-2">{item.value}</p>

@@ -175,7 +175,14 @@ def dashboard_stats(
 @router.get("/reports/summary")
 def reports_summary(
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.admin, UserRole.procurement_officer, UserRole.manager)),
+    _: User = Depends(
+        require_roles(
+            UserRole.admin,
+            UserRole.procurement_officer,
+            UserRole.manager,
+            UserRole.finance_manager,
+        )
+    ),
 ) -> dict:
     total_spend = db.scalar(select(func.coalesce(func.sum(Invoice.grand_total), 0))) or 0
     pending_approvals = (
@@ -249,7 +256,14 @@ def refresh_kpi_dashboard(
 @router.get("/reports/export.csv")
 def export_reports_csv(
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.admin, UserRole.procurement_officer, UserRole.manager)),
+    _: User = Depends(
+        require_roles(
+            UserRole.admin,
+            UserRole.procurement_officer,
+            UserRole.manager,
+            UserRole.finance_manager,
+        )
+    ),
 ) -> Response:
     rows = ["vendor,status,lifecycle_stage,rating,completed_orders"]
     for vendor in db.scalars(select(Vendor).order_by(Vendor.name)).all():

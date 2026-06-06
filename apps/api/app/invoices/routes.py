@@ -93,7 +93,7 @@ def post_generate_invoice(
     po_id: int,
     db: Session = Depends(get_db),
     actor: User = Depends(
-        require_roles(UserRole.procurement_officer, UserRole.manager)
+        require_roles(UserRole.procurement_officer, UserRole.manager, UserRole.finance_manager)
     ),
 ) -> InvoiceRead:
     po = db.get(PurchaseOrder, po_id)

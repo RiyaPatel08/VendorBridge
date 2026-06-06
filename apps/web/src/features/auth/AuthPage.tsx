@@ -54,6 +54,7 @@ export function AuthPage() {
     state: "Gujarat",
     city: "",
     category_name: "IT Equipment",
+    inventory: "",
     bank_account_name: "",
     bank_account_number: "",
     ifsc_code: "",
@@ -97,6 +98,7 @@ export function AuthPage() {
             state: regForm.state,
             city: regForm.city,
             category_name: regForm.category_name,
+            inventory: regForm.inventory || undefined,
             contact_phone: regForm.phone || "+910000000000",
             bank_details: [
               regForm.bank_account_name && `Account: ${regForm.bank_account_name}`,
@@ -345,6 +347,16 @@ export function AuthPage() {
                     >
                       {PRODUCT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                     </select>
+                  </div>
+                  <div className="md:col-span-2 flex flex-col gap-1">
+                    <label className="label" htmlFor="reg-inventory">Initial Inventory</label>
+                    <textarea
+                      id="reg-inventory"
+                      className="field min-h-20"
+                      placeholder="Example: Dell Latitude - 15 available; monitors - 30 available"
+                      value={regForm.inventory}
+                      onChange={(e) => setRegForm({ ...regForm, inventory: e.target.value })}
+                    />
                   </div>
                   {/* Bank Information */}
                   <div className="md:col-span-2">

@@ -72,6 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               compliance_notes: vendorFields.bank_details
                 ? `Bank Details: ${vendorFields.bank_details}`
                 : undefined,
+              custom_attributes: vendorFields.inventory
+                ? { inventory: vendorFields.inventory }
+                : undefined,
             });
           } catch (err) {
             // Vendor profile creation failed — user account was still created

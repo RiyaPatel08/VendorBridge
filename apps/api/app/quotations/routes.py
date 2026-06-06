@@ -56,7 +56,11 @@ def list_quotations(
         if vendor is None:
             return []
         query = query.where(Quotation.vendor_id == vendor.id)
-    elif actor.role not in {UserRole.procurement_officer.value, UserRole.manager.value}:
+    elif actor.role not in {
+        UserRole.procurement_officer.value,
+        UserRole.manager.value,
+        UserRole.finance_manager.value,
+    }:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough privileges"
         )
@@ -126,7 +130,11 @@ def get_quotation(
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Cannot access this quotation"
             )
-    elif actor.role not in {UserRole.procurement_officer.value, UserRole.manager.value}:
+    elif actor.role not in {
+        UserRole.procurement_officer.value,
+        UserRole.manager.value,
+        UserRole.finance_manager.value,
+    }:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough privileges"
         )
@@ -138,7 +146,7 @@ def compare_rfq_quotations(
     rfq_id: int,
     db: Session = Depends(get_db),
     _: User = Depends(
-        require_roles(UserRole.procurement_officer, UserRole.manager)
+        require_roles(UserRole.procurement_officer, UserRole.manager, UserRole.finance_manager)
     ),
 ) -> ComparisonResponse:
     rfq = db.get(RFQ, rfq_id)

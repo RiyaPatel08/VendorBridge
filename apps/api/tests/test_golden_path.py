@@ -30,9 +30,10 @@ def test_rfq_to_invoice_golden_path() -> None:
     reset_db()
     db = next(get_test_db())
     try:
+        create_user(db, "admin@vendorbridge.test", UserRole.admin)
         create_user(db, "officer@vendorbridge.test", UserRole.procurement_officer)
         create_user(db, "rahul.mehta@vendorbridge.test", UserRole.manager)
-        create_user(db, "priya.shah@vendorbridge.test", UserRole.finance_manager)
+        create_user(db, "priya.shah@vendorbridge.test", UserRole.manager)
         create_user(db, "vendor@infrasupplies.test", UserRole.vendor)
         create_user(db, "quotes@techcore.test", UserRole.vendor)
         category = VendorCategory(name="Furniture", code="FURN", is_active=True)
@@ -94,6 +95,14 @@ def test_rfq_to_invoice_golden_path() -> None:
         "/api/v1/auth/login",
         json={"email": "officer@vendorbridge.test", "password": "VendorBridge@123"},
     ).json()["access_token"]
+    winning_vendor_token = client.post(
+        "/api/v1/auth/login",
+        json={"email": "vendor@infrasupplies.test", "password": "VendorBridge@123"},
+    ).json()["access_token"]
+    other_vendor_token = client.post(
+        "/api/v1/auth/login",
+        json={"email": "quotes@techcore.test", "password": "VendorBridge@123"},
+    ).json()["access_token"]
 
     rfq_response = client.post(
         "/api/v1/rfqs",
@@ -124,10 +133,33 @@ def test_rfq_to_invoice_golden_path() -> None:
         == 200
     )
 
+    officer_quote = client.post(
+        "/api/v1/quotations/drafts",
+        headers=auth_header(officer_token),
+        json={
+            "rfq_id": rfq["id"],
+            "vendor_id": 1,
+            "delivery_days": 10,
+            "payment_terms_days": 30,
+            "items": [
+                {
+                    "rfq_item_id": rfq["items"][0]["id"],
+                    "quantity": "25",
+                    "unit_price": "4200",
+                    "gst_percent": "18",
+                    "available_quantity": "25",
+                    "additional_quantity": "0",
+                }
+            ],
+        },
+    )
+    assert officer_quote.status_code == 403
+
+    quote_tokens = {1: winning_vendor_token, 2: other_vendor_token}
     for vendor_id, chair_price, desk_price in [(1, "4200", "5200"), (2, "4700", "6300")]:
         draft = client.post(
             "/api/v1/quotations/drafts",
-            headers=auth_header(officer_token),
+            headers=auth_header(quote_tokens[vendor_id]),
             json={
                 "rfq_id": rfq["id"],
                 "vendor_id": vendor_id,
@@ -157,7 +189,7 @@ def test_rfq_to_invoice_golden_path() -> None:
         assert (
             client.post(
                 f"/api/v1/quotations/{draft.json()['id']}/submit",
-                headers=auth_header(officer_token),
+                headers=auth_header(quote_tokens[vendor_id]),
             ).status_code
             == 200
         )
@@ -180,14 +212,6 @@ def test_rfq_to_invoice_golden_path() -> None:
     finance_token = client.post(
         "/api/v1/auth/login",
         json={"email": "priya.shah@vendorbridge.test", "password": "VendorBridge@123"},
-    ).json()["access_token"]
-    winning_vendor_token = client.post(
-        "/api/v1/auth/login",
-        json={"email": "vendor@infrasupplies.test", "password": "VendorBridge@123"},
-    ).json()["access_token"]
-    other_vendor_token = client.post(
-        "/api/v1/auth/login",
-        json={"email": "quotes@techcore.test", "password": "VendorBridge@123"},
     ).json()["access_token"]
     assert (
         client.post(
@@ -253,6 +277,10 @@ def test_rfq_to_invoice_golden_path() -> None:
         ).status_code
         == 200
     )
-    verify = client.get("/api/v1/activity/verify", headers=auth_header(officer_token))
+    admin_token = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@vendorbridge.test", "password": "VendorBridge@123"},
+    ).json()["access_token"]
+    verify = client.get("/api/v1/activity/verify", headers=auth_header(admin_token))
     assert verify.status_code == 200
     assert verify.json()["ok"] is True

@@ -77,6 +77,7 @@ class VendorSelfRegister(BaseModel):
     city: str = Field(min_length=2, max_length=100)
     contact_phone: str = Field(min_length=7, max_length=32)
     compliance_notes: str | None = None
+    custom_attributes: dict = Field(default_factory=dict)
 
     @field_validator("gstin")
     @classmethod

@@ -72,6 +72,7 @@ export type VendorRegistrationFields = {
   state: string;
   city: string;
   category_name: string;
+  inventory?: string;
   contact_phone: string;
   bank_details?: string;
 };
@@ -86,6 +87,7 @@ export type VendorSelfRegisterPayload = {
   city: string;
   contact_phone: string;
   compliance_notes?: string;
+  custom_attributes?: Record<string, unknown>;
 };
 
 export type VendorPayload = {
