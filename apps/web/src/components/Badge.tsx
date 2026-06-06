@@ -1,32 +1,44 @@
 import type { LifecycleStage, VendorStatus } from "../lib/types";
-import { stageLabel } from "../lib/format";
 
 const statusClasses: Record<VendorStatus, string> = {
-  active: "bg-teal-50 text-success ring-teal-200",
-  pending: "bg-amber-50 text-warn ring-amber-200",
-  blocked: "bg-red-50 text-danger ring-red-200",
+  active: "bg-secondary/10 text-secondary border border-secondary/20",
+  pending: "bg-primary-container/30 text-primary border border-primary/20",
+  blocked: "bg-error-container text-on-error-container border border-error/20",
 };
 
 const stageClasses: Record<LifecycleStage, string> = {
-  potential: "bg-slate-100 text-slate-700 ring-slate-200",
-  emerging: "bg-cyan-50 text-cyan-700 ring-cyan-200",
-  verified: "bg-blue-50 text-blue-700 ring-blue-200",
-  trusted: "bg-teal-50 text-success ring-teal-200",
-  preferred: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  potential: "bg-surface-container text-on-surface-variant border border-outline-variant",
+  emerging: "bg-[#7cf2ee]/30 text-[#006a68] border border-[#006a68]/20",
+  verified: "bg-primary/10 text-primary border border-primary/20",
+  trusted: "bg-secondary/10 text-secondary border border-secondary/20",
+  preferred: "bg-tertiary/10 text-tertiary border border-tertiary/20",
+};
+
+const stageLabels: Record<LifecycleStage, string> = {
+  potential: "Potential",
+  emerging: "Emerging",
+  verified: "Verified",
+  trusted: "Trusted",
+  preferred: "Preferred",
 };
 
 export function StatusBadge({ status }: { status: VendorStatus }) {
+  const labels: Record<VendorStatus, string> = {
+    active: "Active",
+    pending: "Pending",
+    blocked: "Blocked",
+  };
   return (
-    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ring-1 ${statusClasses[status]}`}>
-      {stageLabel(status)}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusClasses[status]}`}>
+      {labels[status]}
     </span>
   );
 }
 
 export function StageBadge({ stage }: { stage: LifecycleStage }) {
   return (
-    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ring-1 ${stageClasses[stage]}`}>
-      {stageLabel(stage)}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${stageClasses[stage]}`}>
+      {stageLabels[stage]}
     </span>
   );
 }
@@ -34,14 +46,18 @@ export function StageBadge({ stage }: { stage: LifecycleStage }) {
 export function ComplianceBadge({ value }: { value: "compliant" | "needs_review" | "blocked" }) {
   const classes =
     value === "compliant"
-      ? "bg-teal-50 text-success ring-teal-200"
+      ? "bg-secondary/10 text-secondary border border-secondary/20"
       : value === "blocked"
-        ? "bg-red-50 text-danger ring-red-200"
-        : "bg-amber-50 text-warn ring-amber-200";
+        ? "bg-error-container text-on-error-container border border-error/20"
+        : "bg-primary-container/30 text-primary border border-primary/20";
+  const labels: Record<typeof value, string> = {
+    compliant: "Compliant",
+    needs_review: "Needs Review",
+    blocked: "Blocked",
+  };
   return (
-    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ring-1 ${classes}`}>
-      {value === "needs_review" ? "Needs Review" : stageLabel(value)}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${classes}`}>
+      {labels[value]}
     </span>
   );
 }
-

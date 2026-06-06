@@ -65,6 +65,16 @@ export type RegisterPayload = {
   password: string;
 };
 
+export type VendorRegistrationFields = {
+  company_name: string;
+  gstin: string;
+  pan?: string;
+  state: string;
+  city: string;
+  category_name: string;
+  bank_details?: string;
+};
+
 export type VendorPayload = {
   name: string;
   legal_name?: string;

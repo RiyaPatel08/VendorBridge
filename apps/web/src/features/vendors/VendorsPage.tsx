@@ -1,8 +1,18 @@
-import { Ban, Edit3, Filter, Plus, RotateCcw, Save, Search, X } from "lucide-react";
+import { Ban, Edit3, Plus, RotateCcw, Save, Search, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ComplianceBadge, StageBadge, StatusBadge } from "../../components/Badge";
 import { api, ApiError, type VendorPayload } from "../../lib/api";
 import type { Vendor, VendorCategory, VendorStatus } from "../../lib/types";
+import { useAuth } from "../auth/AuthContext";
+
+const INDIA_STATES = [
+  "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh",
+  "Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka",
+  "Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram",
+  "Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana",
+  "Tripura","Uttar Pradesh","Uttarakhand","West Bengal",
+  "Delhi","Jammu & Kashmir","Ladakh","Chandigarh","Puducherry",
+];
 
 const emptyForm: VendorPayload = {
   name: "",
@@ -25,11 +35,38 @@ const emptyForm: VendorPayload = {
   compliance_notes: "",
 };
 
+const AVATAR_COLORS = [
+  "bg-primary/20 text-primary",
+  "bg-secondary/20 text-secondary",
+  "bg-tertiary/20 text-tertiary",
+  "bg-[#7c5071]/20 text-[#7c5071]",
+  "bg-error/10 text-error",
+];
+
+function VendorAvatar({ name }: { name: string }) {
+  const initials = name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w.charAt(0).toUpperCase())
+    .join("");
+  const color = AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+  return (
+    <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${color}`}>
+      {initials}
+    </div>
+  );
+}
+
+type FilterValue = "all" | VendorStatus;
+
 export function VendorsPage({ token }: { token: string }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "procurement_officer";
+
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [categories, setCategories] = useState<VendorCategory[]>([]);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | VendorStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<FilterValue>("all");
   const [total, setTotal] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,12 +76,12 @@ export function VendorsPage({ token }: { token: string }) {
   const [form, setForm] = useState<VendorPayload>(emptyForm);
 
   const categoryById = useMemo(
-    () => new Map(categories.map((category) => [category.id, category.name])),
+    () => new Map(categories.map((c) => [c.id, c.name])),
     [categories],
   );
 
   async function loadVendors() {
-    const params = new URLSearchParams({ page: "1", page_size: "25" });
+    const params = new URLSearchParams({ page: "1", page_size: "50" });
     if (search.trim()) params.set("search", search.trim());
     if (statusFilter !== "all") params.set("status", statusFilter);
     const response = await api.vendors(token, params);
@@ -58,7 +95,7 @@ export function VendorsPage({ token }: { token: string }) {
       .then((items) => {
         setCategories(items);
         if (items.length > 0) {
-          setForm((current) => ({ ...current, category_id: current.category_id || items[0].id }));
+          setForm((f) => ({ ...f, category_id: f.category_id || items[0].id }));
         }
       })
       .catch((caught) => setError(caught instanceof ApiError ? caught.message : "Could not load categories"));
@@ -117,10 +154,10 @@ export function VendorsPage({ token }: { token: string }) {
       };
       if (editing) {
         await api.updateVendor(token, editing.id, payload);
-        setNotice("Vendor updated");
+        setNotice("Vendor updated successfully");
       } else {
         await api.createVendor(token, payload);
-        setNotice("Vendor created");
+        setNotice("Vendor created successfully");
       }
       resetForm();
       await loadVendors();
@@ -150,339 +187,266 @@ export function VendorsPage({ token }: { token: string }) {
     }
   }
 
+  const filterPills: { value: FilterValue; label: string }[] = [
+    { value: "all", label: "All" },
+    { value: "active", label: "Active" },
+    { value: "blocked", label: "Blocked" },
+    { value: "pending", label: "Pending" },
+  ];
+
   return (
     <div className="space-y-5">
-      <section className="panel p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Vendor Management</h2>
-            <p className="mt-1 text-sm text-slate-600">{total} vendor records</p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <form
-              className="flex min-w-0 gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                loadVendors().catch((caught) =>
-                  setError(caught instanceof ApiError ? caught.message : "Could not search vendors"),
-                );
-              }}
-            >
-              <div className="relative min-w-0 flex-1 sm:w-72">
-                <Search className="pointer-events-none absolute left-3 top-2.5 text-slate-400" size={18} />
-                <input
-                  className="field pl-10"
-                  placeholder="Search name, GSTIN, city"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </div>
-              <button className="btn-secondary" title="Search vendors">
-                <Search size={18} />
-              </button>
-            </form>
-            <div className="flex gap-2">
-              <label className="relative">
-                <Filter className="pointer-events-none absolute left-3 top-2.5 text-slate-400" size={18} />
-                <select
-                  className="field w-40 pl-10"
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value as "all" | VendorStatus)}
-                >
-                  <option value="all">All</option>
-                  <option value="active">Active</option>
-                  <option value="pending">Pending</option>
-                  <option value="blocked">Blocked</option>
-                </select>
-              </label>
-              <button
-                className="btn-primary"
-                onClick={() => {
-                  setShowForm(true);
-                  setEditing(null);
-                  setForm({ ...emptyForm, category_id: categories[0]?.id ?? 0 });
-                }}
-              >
-                <Plus size={18} />
-                Add Vendor
-              </button>
-            </div>
-          </div>
+      {/* Header row */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h2 className="font-headline-md text-headline-md text-on-surface">Vendors</h2>
+        {isAdmin && (
+          <button
+            className="btn-primary"
+            onClick={() => {
+              setShowForm(true);
+              setEditing(null);
+              setForm({ ...emptyForm, category_id: categories[0]?.id ?? 0 });
+            }}
+          >
+            <Plus size={18} />
+            Add Vendor
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <div className="rounded-lg bg-error-container border border-error/20 px-4 py-3 text-sm text-on-error-container">
+          {error}
         </div>
-      </section>
+      )}
+      {notice && (
+        <div className="rounded-lg bg-secondary-container/30 border border-secondary/20 px-4 py-3 text-sm text-on-secondary-container">
+          {notice}
+        </div>
+      )}
 
-      {error && <div className="rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div>}
-      {notice && <div className="rounded-md bg-teal-50 p-3 text-sm text-success">{notice}</div>}
-
-      {showForm && (
-        <section className="panel p-4">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 className="font-semibold">{editing ? "Edit Vendor" : "Add Vendor"}</h3>
-            <button className="btn-secondary h-9 w-9 px-0" onClick={resetForm} title="Close form">
-              <X size={18} />
+      {/* Add/Edit form */}
+      {showForm && isAdmin && (
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-title-sm text-title-sm text-on-surface">
+              {editing ? "Edit Vendor" : "Add New Vendor"}
+            </h3>
+            <button className="btn-secondary h-8 w-8 px-0" onClick={resetForm}>
+              <X size={16} />
             </button>
           </div>
-          <form onSubmit={handleSubmit} className="grid gap-3 lg:grid-cols-4">
+          <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             <label className="space-y-1 lg:col-span-2">
-              <span className="label">Vendor name</span>
-              <input
-                className="field"
-                value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
-                required
-              />
+              <span className="label">Vendor name *</span>
+              <input className="field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </label>
             <label className="space-y-1 lg:col-span-2">
               <span className="label">Legal name</span>
-              <input
-                className="field"
-                value={form.legal_name}
-                onChange={(event) => setForm({ ...form, legal_name: event.target.value })}
-              />
+              <input className="field" value={form.legal_name} onChange={(e) => setForm({ ...form, legal_name: e.target.value })} />
             </label>
             <label className="space-y-1">
-              <span className="label">Category</span>
-              <select
-                className="field"
-                value={form.category_id}
-                onChange={(event) => setForm({ ...form, category_id: Number(event.target.value) })}
-                required
-              >
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
+              <span className="label">Category *</span>
+              <select className="field" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: Number(e.target.value) })} required>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </label>
             <label className="space-y-1">
               <span className="label">Status</span>
-              <select
-                className="field"
-                value={form.status}
-                onChange={(event) => setForm({ ...form, status: event.target.value as VendorStatus })}
-              >
+              <select className="field" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as VendorStatus })}>
                 <option value="pending">Pending</option>
                 <option value="active">Active</option>
                 <option value="blocked">Blocked</option>
               </select>
             </label>
             <label className="space-y-1">
-              <span className="label">GSTIN</span>
-              <input
-                className="field uppercase"
-                minLength={15}
-                maxLength={15}
-                value={form.gstin}
-                onChange={(event) => setForm({ ...form, gstin: event.target.value.toUpperCase() })}
-                required
-              />
+              <span className="label">GSTIN *</span>
+              <input className="field uppercase" minLength={15} maxLength={15} value={form.gstin} onChange={(e) => setForm({ ...form, gstin: e.target.value.toUpperCase() })} required />
             </label>
             <label className="space-y-1">
               <span className="label">PAN</span>
-              <input
-                className="field uppercase"
-                minLength={10}
-                maxLength={10}
-                value={form.pan}
-                onChange={(event) => setForm({ ...form, pan: event.target.value.toUpperCase() })}
-              />
+              <input className="field uppercase" minLength={10} maxLength={10} value={form.pan} onChange={(e) => setForm({ ...form, pan: e.target.value.toUpperCase() })} />
             </label>
             <label className="space-y-1">
-              <span className="label">State</span>
-              <input
-                className="field"
-                value={form.state}
-                onChange={(event) => setForm({ ...form, state: event.target.value })}
-                required
-              />
+              <span className="label">State *</span>
+              <select className="field" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} required>
+                {INDIA_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
             </label>
             <label className="space-y-1">
-              <span className="label">City</span>
-              <input
-                className="field"
-                value={form.city}
-                onChange={(event) => setForm({ ...form, city: event.target.value })}
-                required
-              />
+              <span className="label">City *</span>
+              <input className="field" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required />
             </label>
             <label className="space-y-1">
-              <span className="label">Contact</span>
-              <input
-                className="field"
-                value={form.contact_name}
-                onChange={(event) => setForm({ ...form, contact_name: event.target.value })}
-                required
-              />
+              <span className="label">Contact name *</span>
+              <input className="field" value={form.contact_name} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} required />
             </label>
             <label className="space-y-1">
-              <span className="label">Email</span>
-              <input
-                className="field"
-                type="email"
-                value={form.contact_email}
-                onChange={(event) => setForm({ ...form, contact_email: event.target.value })}
-                required
-              />
+              <span className="label">Contact email *</span>
+              <input className="field" type="email" value={form.contact_email} onChange={(e) => setForm({ ...form, contact_email: e.target.value })} required />
             </label>
             <label className="space-y-1">
-              <span className="label">Phone</span>
-              <input
-                className="field"
-                value={form.contact_phone}
-                onChange={(event) => setForm({ ...form, contact_phone: event.target.value })}
-                required
-              />
+              <span className="label">Contact phone *</span>
+              <input className="field" value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} required />
             </label>
             <label className="space-y-1">
               <span className="label">Completed orders</span>
-              <input
-                className="field"
-                type="number"
-                min={0}
-                value={form.completed_orders_count}
-                onChange={(event) =>
-                  setForm({ ...form, completed_orders_count: Number(event.target.value) })
-                }
-              />
+              <input className="field" type="number" min={0} value={form.completed_orders_count} onChange={(e) => setForm({ ...form, completed_orders_count: Number(e.target.value) })} />
             </label>
             <label className="space-y-1">
-              <span className="label">Rating</span>
-              <input
-                className="field"
-                type="number"
-                min={0}
-                max={5}
-                step="0.01"
-                value={form.rating}
-                onChange={(event) => setForm({ ...form, rating: event.target.value })}
-              />
+              <span className="label">Rating (0–5)</span>
+              <input className="field" type="number" min={0} max={5} step="0.01" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
             </label>
             <label className="space-y-1">
-              <span className="label">Reliability</span>
-              <input
-                className="field"
-                type="number"
-                min={0}
-                max={100}
-                step="0.01"
-                value={form.reliability_score}
-                onChange={(event) => setForm({ ...form, reliability_score: event.target.value })}
-              />
+              <span className="label">Reliability %</span>
+              <input className="field" type="number" min={0} max={100} step="0.01" value={form.reliability_score} onChange={(e) => setForm({ ...form, reliability_score: e.target.value })} />
             </label>
             <label className="space-y-1">
-              <span className="label">Delivery</span>
-              <input
-                className="field"
-                type="number"
-                min={0}
-                max={100}
-                step="0.01"
-                value={form.delivery_score}
-                onChange={(event) => setForm({ ...form, delivery_score: event.target.value })}
-              />
+              <span className="label">Delivery %</span>
+              <input className="field" type="number" min={0} max={100} step="0.01" value={form.delivery_score} onChange={(e) => setForm({ ...form, delivery_score: e.target.value })} />
             </label>
             <label className="space-y-1">
-              <span className="label">Completion</span>
-              <input
-                className="field"
-                type="number"
-                min={0}
-                max={100}
-                step="0.01"
-                value={form.completion_rate}
-                onChange={(event) => setForm({ ...form, completion_rate: event.target.value })}
-              />
+              <span className="label">Completion %</span>
+              <input className="field" type="number" min={0} max={100} step="0.01" value={form.completion_rate} onChange={(e) => setForm({ ...form, completion_rate: e.target.value })} />
             </label>
             <label className="space-y-1">
-              <span className="label">Satisfaction</span>
-              <input
-                className="field"
-                type="number"
-                min={0}
-                max={100}
-                step="0.01"
-                value={form.satisfaction_score}
-                onChange={(event) => setForm({ ...form, satisfaction_score: event.target.value })}
-              />
+              <span className="label">Satisfaction %</span>
+              <input className="field" type="number" min={0} max={100} step="0.01" value={form.satisfaction_score} onChange={(e) => setForm({ ...form, satisfaction_score: e.target.value })} />
             </label>
             <label className="space-y-1 lg:col-span-3">
               <span className="label">Compliance notes</span>
-              <input
-                className="field"
-                value={form.compliance_notes}
-                onChange={(event) => setForm({ ...form, compliance_notes: event.target.value })}
-              />
+              <input className="field" value={form.compliance_notes} onChange={(e) => setForm({ ...form, compliance_notes: e.target.value })} />
             </label>
             <div className="flex items-end gap-2">
               <button className="btn-primary w-full" disabled={busy || !form.category_id}>
-                <Save size={18} />
-                {editing ? "Save" : "Create"}
+                <Save size={16} />
+                {editing ? "Update" : "Create"}
               </button>
-              <button type="button" className="btn-secondary" onClick={resetForm}>
-                <X size={18} />
+              <button type="button" className="btn-secondary h-10 w-10 px-0" onClick={resetForm}>
+                <X size={16} />
               </button>
             </div>
           </form>
-        </section>
+        </div>
       )}
 
-      <section className="panel overflow-hidden">
+      {/* Search + filters */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-card p-4">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          {/* Search */}
+          <form
+            className="relative w-full sm:max-w-xs"
+            onSubmit={(e) => {
+              e.preventDefault();
+              loadVendors().catch((caught) =>
+                setError(caught instanceof ApiError ? caught.message : "Search failed"),
+              );
+            }}
+          >
+            <Search className="absolute left-3 top-2.5 text-on-surface-variant pointer-events-none" size={16} />
+            <input
+              className="field pl-9 pr-4"
+              placeholder="Search by name, GST…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </form>
+
+          {/* Filter pills */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {filterPills.map((pill) => (
+              <button
+                key={pill.value}
+                className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors border ${
+                  statusFilter === pill.value
+                    ? "bg-primary text-on-primary border-primary"
+                    : "bg-transparent text-on-surface-variant border-outline-variant hover:bg-surface-container-high"
+                }`}
+                onClick={() => setStatusFilter(pill.value)}
+              >
+                {pill.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Vendors table */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] border-collapse text-left text-sm">
-            <thead className="border-b border-line bg-field text-xs uppercase text-slate-600">
-              <tr>
-                <th className="px-4 py-3">Vendor</th>
-                <th className="px-4 py-3">GSTIN</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Lifecycle</th>
-                <th className="px-4 py-3">Compliance</th>
-                <th className="px-4 py-3">Rating</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+          <table className="w-full min-w-[700px] text-left">
+            <thead>
+              <tr className="bg-surface-container-low border-b border-outline-variant">
+                <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide">Vendor Name</th>
+                <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide">Category</th>
+                <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide">GST No</th>
+                <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide">Contact</th>
+                <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide">Stage</th>
+                <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide">Status</th>
+                {isAdmin && <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide text-right">Actions</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-outline-variant text-body-dense">
               {vendors.map((vendor) => (
-                <tr key={vendor.id} className="bg-white hover:bg-slate-50">
+                <tr key={vendor.id} className="hover:bg-surface-container-low transition-colors">
                   <td className="px-4 py-3">
-                    <p className="font-semibold">{vendor.name}</p>
-                    <p className="text-xs text-slate-500">
-                      {vendor.city}, {vendor.state} · {vendor.contact_email}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      <VendorAvatar name={vendor.name} />
+                      <div>
+                        <p className="font-semibold text-on-surface">{vendor.name}</p>
+                        <p className="text-xs text-on-surface-variant">
+                          {vendor.city}, {vendor.state}
+                        </p>
+                      </div>
+                    </div>
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs">{vendor.gstin}</td>
-                  <td className="px-4 py-3">{categoryById.get(vendor.category_id) ?? "Unassigned"}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={vendor.status} />
+                  <td className="px-4 py-3 text-on-surface-variant">
+                    {categoryById.get(vendor.category_id) ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-on-surface">{vendor.gstin}</td>
+                  <td className="px-4 py-3 text-on-surface-variant">
+                    <p className="font-medium text-on-surface">{vendor.contact_name}</p>
+                    <p className="text-xs">{vendor.contact_email}</p>
                   </td>
                   <td className="px-4 py-3">
                     <StageBadge stage={vendor.lifecycle_stage} />
                   </td>
                   <td className="px-4 py-3">
-                    <ComplianceBadge value={vendor.compliance_badge} />
+                    <StatusBadge status={vendor.status} />
                   </td>
-                  <td className="px-4 py-3">{Number(vendor.rating).toFixed(2)} / 5</td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
-                      <button className="btn-secondary h-9 w-9 px-0" onClick={() => startEdit(vendor)} title="Edit vendor">
-                        <Edit3 size={16} />
-                      </button>
-                      <button
-                        className={vendor.status === "blocked" ? "btn-secondary h-9 w-9 px-0" : "btn-danger h-9 w-9 px-0"}
-                        disabled={busy}
-                        onClick={() => toggleBlocked(vendor)}
-                        title={vendor.status === "blocked" ? "Unblock vendor" : "Block vendor"}
-                      >
-                        {vendor.status === "blocked" ? <RotateCcw size={16} /> : <Ban size={16} />}
-                      </button>
-                    </div>
-                  </td>
+                  {isAdmin && (
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          className="btn-secondary h-8 w-8 px-0"
+                          onClick={() => startEdit(vendor)}
+                          title="Edit vendor"
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                        <button
+                          className={
+                            vendor.status === "blocked"
+                              ? "btn-secondary h-8 w-8 px-0"
+                              : "btn-danger h-8 w-8 px-0"
+                          }
+                          disabled={busy}
+                          onClick={() => toggleBlocked(vendor)}
+                          title={vendor.status === "blocked" ? "Unblock" : "Block"}
+                        >
+                          {vendor.status === "blocked" ? <RotateCcw size={14} /> : <Ban size={14} />}
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
               {vendors.length === 0 && (
                 <tr>
-                  <td className="px-4 py-10 text-center text-slate-500" colSpan={8}>
+                  <td
+                    className="px-4 py-10 text-center text-on-surface-variant"
+                    colSpan={isAdmin ? 7 : 6}
+                  >
                     No vendors match the current filters.
                   </td>
                 </tr>
@@ -490,7 +454,10 @@ export function VendorsPage({ token }: { token: string }) {
             </tbody>
           </table>
         </div>
-      </section>
+        <div className="px-4 py-3 border-t border-outline-variant bg-surface-container-low">
+          <p className="text-xs text-on-surface-variant">Showing {vendors.length} of {total} vendors</p>
+        </div>
+      </div>
     </div>
   );
 }
