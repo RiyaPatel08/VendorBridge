@@ -129,7 +129,7 @@ def list_vendor_rfqs(
 def post_rfq(
     payload: RFQCreate,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.admin, UserRole.procurement_officer)),
+    actor: User = Depends(require_roles(UserRole.procurement_officer)),
 ) -> RFQRead:
     rfq = create_rfq(db, payload, actor)
     db.commit()
@@ -154,7 +154,7 @@ def patch_rfq(
     rfq_id: int,
     payload: RFQUpdate,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.admin, UserRole.procurement_officer)),
+    actor: User = Depends(require_roles(UserRole.procurement_officer)),
 ) -> RFQRead:
     rfq = db.get(RFQ, rfq_id)
     if rfq is None:
@@ -169,7 +169,7 @@ def patch_rfq(
 def post_send_rfq(
     rfq_id: int,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.admin, UserRole.procurement_officer)),
+    actor: User = Depends(require_roles(UserRole.procurement_officer)),
 ) -> RFQRead:
     rfq = db.get(RFQ, rfq_id)
     if rfq is None:
@@ -185,7 +185,7 @@ def post_select_quotation(
     rfq_id: int,
     payload: SelectQuotationRequest,
     db: Session = Depends(get_db),
-    actor: User = Depends(require_roles(UserRole.admin, UserRole.procurement_officer)),
+    actor: User = Depends(require_roles(UserRole.procurement_officer)),
 ) -> dict:
     rfq = db.get(RFQ, rfq_id)
     if rfq is None:

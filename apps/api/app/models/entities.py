@@ -2,7 +2,6 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
-    JSON,
     Boolean,
     CheckConstraint,
     Date,
@@ -26,7 +25,13 @@ from app.common.enums import (
     UserRole,
     VendorStatus,
 )
+from app.db.optimizations import JSONColumn
 from app.db.session import Base
+
+# All semi-structured columns use ``JSONColumn`` so they are stored as native
+# binary ``jsonb`` on PostgreSQL (indexable + containment queries) and fall back
+# to plain ``JSON`` on SQLite for tests.
+JSON = JSONColumn
 
 
 class TimestampMixin:
@@ -94,6 +99,10 @@ class Vendor(Base, TimestampMixin):
     is_gstin_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_pan_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     compliance_notes: Mapped[str | None] = mapped_column(Text)
+    # Tenant-defined custom fields (e.g. MSME number, ISO certification flags).
+    # Stored as GIN-indexed JSONB on PostgreSQL so new fields are queryable in
+    # milliseconds with no schema migration.
+    custom_attributes: Mapped[dict] = mapped_column(JSON, default=dict)
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
 
     category: Mapped[VendorCategory] = relationship(back_populates="vendors")
@@ -146,6 +155,7 @@ class RFQ(Base, TimestampMixin):
     description: Mapped[str | None] = mapped_column(Text)
     deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(24), default=RFQStatus.draft.value, index=True)
+    custom_attributes: Mapped[dict] = mapped_column(JSON, default=dict)
     created_by_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
     items: Mapped[list["RFQItem"]] = relationship(cascade="all, delete-orphan")
@@ -324,6 +334,16 @@ class Invoice(Base, TimestampMixin):
     igst_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=Decimal("0.00"))
     grand_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=Decimal("0.00"))
     match_status: Mapped[str] = mapped_column(String(32), default="pending")
+
+    __table_args__ = (
+        # The database itself refuses to mark an invoice payable/paid unless the
+        # 3-way match has passed. Business integrity is enforced at the schema
+        # level, not only in Python.
+        CheckConstraint(
+            "status not in ('payable','paid') or match_status = 'matched'",
+            name="ck_invoices_three_way_match",
+        ),
+    )
 
 
 class InvoiceItem(Base):

@@ -7,6 +7,7 @@ from app.activity.service import append_activity_log, seal_activity_block
 from app.approvals.service import approve_request
 from app.common.enums import LifecycleStage, UserRole, VendorStatus
 from app.core.security import hash_password
+from app.db.optimizations import refresh_vendor_kpis
 from app.db.session import SessionLocal
 from app.invoices.service import generate_invoice, mark_payable, queue_invoice_email
 from app.models.entities import RFQ, Budget, Quotation, RFQItem, User, Vendor
@@ -148,6 +149,12 @@ def seed() -> None:
             is_gstin_verified=True,
             is_pan_verified=True,
             compliance_notes="GST and PAN verified for demo.",
+            custom_attributes={
+                "iso_certified": True,
+                "msme_registration": "UDYAM-GJ-01-0001234",
+                "preferred_payment": "NEFT",
+                "delivery_radius_km": 250,
+            },
         )
         techcore = upsert_vendor(
             db,
@@ -173,6 +180,11 @@ def seed() -> None:
             is_gstin_verified=True,
             is_pan_verified=True,
             compliance_notes=None,
+            custom_attributes={
+                "iso_certified": True,
+                "msme_registration": "UDYAM-GJ-01-0007788",
+                "preferred_payment": "RTGS",
+            },
         )
         officeneed = upsert_vendor(
             db,
@@ -198,6 +210,7 @@ def seed() -> None:
             is_gstin_verified=True,
             is_pan_verified=True,
             compliance_notes=None,
+            custom_attributes={"iso_certified": False, "preferred_payment": "UPI"},
         )
         upsert_vendor(
             db,
@@ -352,6 +365,10 @@ def seed() -> None:
             )
 
         seal_activity_block(db)
+        db.commit()
+        # Populate the dashboard materialized view from the freshly seeded data
+        # (no-op on SQLite).
+        refresh_vendor_kpis(db)
         db.commit()
         print("Seeded VendorBridge demo data.")
     finally:

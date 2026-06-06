@@ -44,11 +44,16 @@ const ALL_NAV_ITEMS: NavItem[] = [
 ];
 
 const ROLE_NAV: Record<UserRole, ViewKey[]> = {
-  admin: ["dashboard", "vendors", "rfqs", "quotations", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
+  // Admin: platform oversight only — can VIEW but not act on RFQs or approvals
+  admin: ["dashboard", "vendors", "rfqs", "approvals", "reports", "activity"],
+  // Procurement Officer: full procurement lifecycle except approving
   procurement_officer: ["dashboard", "vendors", "rfqs", "quotations", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
-  manager: ["dashboard", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
-  finance_manager: ["dashboard", "purchaseOrders", "invoices", "reports", "activity"],
-  vendor: ["dashboard", "quotations", "purchaseOrders", "invoices", "activity"],
+  // Manager / Approver: reviews RFQs & quotations, approves/rejects requests
+  manager: ["dashboard", "rfqs", "quotations", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
+  // Finance Manager (legacy sub-role of manager)
+  finance_manager: ["dashboard", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
+  // Vendor: receive RFQs, submit quotations, manage orders
+  vendor: ["dashboard", "rfqs", "quotations", "purchaseOrders", "invoices", "activity"],
 };
 
 function roleLabel(role: UserRole): string {
@@ -137,8 +142,8 @@ export function Layout({
         })}
       </nav>
 
-      {/* Create RFQ CTA — only for officers and admin */}
-      {(role === "procurement_officer" || role === "admin") && (
+      {/* Create RFQ CTA — only for procurement officers */}
+      {role === "procurement_officer" && (
         <div className="px-3 pb-3 pt-2 border-t border-outline-variant">
           <button
             className="w-full bg-primary text-on-primary py-2.5 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"

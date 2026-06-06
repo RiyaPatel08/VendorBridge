@@ -1,10 +1,12 @@
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, Response
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from app.common.dependencies import get_current_user
+from app.common.dependencies import get_current_user, require_roles
+from app.common.enums import UserRole
+from app.db.optimizations import VENDOR_KPI_VIEW, is_postgres, refresh_vendor_kpis
 from app.db.session import get_db
 from app.models.entities import (
     RFQ,
@@ -19,6 +21,57 @@ from app.models.entities import (
 )
 
 router = APIRouter(tags=["dashboard"])
+
+
+def _vendor_kpi_rows(db: Session) -> list[dict]:
+    """Top vendors by performance.
+
+    On PostgreSQL this reads from the ``vendor_kpi_dashboard`` materialized view
+    so the dashboard loads in O(1) regardless of how many orders/invoices exist
+    (the heavy aggregation was pre-computed). On SQLite it falls back to a live
+    query so tests and quick local dev keep working.
+    """
+
+    if is_postgres(db):
+        rows = db.execute(
+            text(
+                f"""
+                SELECT vendor_id, vendor_name, rating, lifecycle_stage,
+                       total_purchase_orders, total_spend, avg_rating,
+                       completed_orders_count
+                FROM {VENDOR_KPI_VIEW}
+                ORDER BY total_spend DESC, rating DESC
+                LIMIT 8
+                """
+            )
+        ).mappings()
+        return [
+            {
+                "id": row["vendor_id"],
+                "name": row["vendor_name"],
+                "rating": float(row["rating"]),
+                "lifecycle_stage": row["lifecycle_stage"],
+                "total_purchase_orders": int(row["total_purchase_orders"]),
+                "total_spend": float(row["total_spend"]),
+                "avg_rating": float(row["avg_rating"]),
+                "completed_orders_count": row["completed_orders_count"],
+            }
+            for row in rows
+        ]
+    vendor_rows = []
+    for vendor in db.scalars(select(Vendor).order_by(Vendor.rating.desc()).limit(8)).all():
+        vendor_rows.append(
+            {
+                "id": vendor.id,
+                "name": vendor.name,
+                "rating": float(vendor.rating),
+                "lifecycle_stage": vendor.lifecycle_stage,
+                "reliability_score": float(vendor.reliability_score),
+                "delivery_score": float(vendor.delivery_score),
+                "completed_orders_count": vendor.completed_orders_count,
+            }
+        )
+    return vendor_rows
 
 
 @router.get("/dashboard/stats")
@@ -128,19 +181,7 @@ def reports_summary(
             }
         )
 
-    vendor_rows = []
-    for vendor in db.scalars(select(Vendor).order_by(Vendor.rating.desc()).limit(8)).all():
-        vendor_rows.append(
-            {
-                "id": vendor.id,
-                "name": vendor.name,
-                "rating": float(vendor.rating),
-                "lifecycle_stage": vendor.lifecycle_stage,
-                "reliability_score": float(vendor.reliability_score),
-                "delivery_score": float(vendor.delivery_score),
-                "completed_orders_count": vendor.completed_orders_count,
-            }
-        )
+    vendor_rows = _vendor_kpi_rows(db)
     quote_count = db.scalar(select(func.count()).select_from(Quotation)) or 0
     return {
         "kpis": {
@@ -153,6 +194,22 @@ def reports_summary(
         "categories": category_rows,
         "vendors": vendor_rows,
     }
+
+
+@router.post("/reports/refresh-kpis")
+def refresh_kpi_dashboard(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.admin, UserRole.procurement_officer)),
+) -> dict:
+    """Recompute the vendor KPI materialized view.
+
+    Returns ``refreshed: false`` on SQLite, where the dashboard already reads
+    live data and no materialized view exists.
+    """
+
+    refreshed = refresh_vendor_kpis(db)
+    db.commit()
+    return {"refreshed": refreshed, "view": VENDOR_KPI_VIEW if refreshed else None}
 
 
 @router.get("/reports/export.csv")

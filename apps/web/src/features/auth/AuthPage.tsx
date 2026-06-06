@@ -7,10 +7,9 @@ import { useAuth } from "./AuthContext";
 type Mode = "login" | "register" | "forgot";
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
-  { value: "procurement_officer", label: "Procurement Officer" },
+  { value: "procurement_officer", label: "Procurement Officer (Buyer)" },
   { value: "manager", label: "Manager / Approver" },
-  { value: "finance_manager", label: "Finance Manager" },
-  { value: "vendor", label: "Vendor" },
+  { value: "vendor", label: "Vendor (Supplier)" },
 ];
 
 const INDIA_STATES = [
@@ -98,6 +97,7 @@ export function AuthPage() {
             state: regForm.state,
             city: regForm.city,
             category_name: regForm.category_name,
+            contact_phone: regForm.phone || "+910000000000",
             bank_details: [
               regForm.bank_account_name && `Account: ${regForm.bank_account_name}`,
               regForm.bank_account_number && `Number: ${regForm.bank_account_number}`,

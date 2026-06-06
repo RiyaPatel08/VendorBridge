@@ -88,7 +88,7 @@ def post_approve(
     payload: ApprovalDecision,
     db: Session = Depends(get_db),
     actor: User = Depends(
-        require_roles(UserRole.admin, UserRole.manager, UserRole.finance_manager)
+        require_roles(UserRole.manager, UserRole.finance_manager)
     ),
 ) -> ApprovalRead:
     approval = db.get(ApprovalRequest, approval_id)
@@ -106,7 +106,7 @@ def post_reject(
     payload: ApprovalDecision,
     db: Session = Depends(get_db),
     actor: User = Depends(
-        require_roles(UserRole.admin, UserRole.manager, UserRole.finance_manager)
+        require_roles(UserRole.manager, UserRole.finance_manager)
     ),
 ) -> ApprovalRead:
     approval = db.get(ApprovalRequest, approval_id)

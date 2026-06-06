@@ -1,6 +1,6 @@
 # Reference clones (kept locally for inspiration, never committed)
 clones-odoo/
-
+frontend-reference/
 # Environment / secrets
 .env
 .env.*

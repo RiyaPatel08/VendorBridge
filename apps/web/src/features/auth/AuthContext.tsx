@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await api.register(payload);
         localStorage.setItem(TOKEN_KEY, response.access_token);
 
-        // If vendor role, auto-create vendor profile
+        // If vendor role, auto-create vendor profile via self-register endpoint
         if (payload.role === "vendor" && vendorFields) {
           try {
             const categories = await api.categories(response.access_token);
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               ) ?? categories[0];
             const categoryId = matchedCategory?.id ?? 1;
 
-            await api.createVendor(response.access_token, {
+            await api.selfRegisterVendor(response.access_token, {
               name: vendorFields.company_name,
               legal_name: vendorFields.company_name,
               category_id: categoryId,
@@ -68,16 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               pan: vendorFields.pan,
               state: vendorFields.state,
               city: vendorFields.city,
-              contact_name: `${payload.first_name} ${payload.last_name}`,
-              contact_email: payload.email,
-              contact_phone: payload.phone ?? "",
-              status: "pending",
-              completed_orders_count: 0,
-              rating: "0.00",
-              reliability_score: "0.00",
-              delivery_score: "0.00",
-              completion_rate: "0.00",
-              satisfaction_score: "0.00",
+              contact_phone: vendorFields.contact_phone,
               compliance_notes: vendorFields.bank_details
                 ? `Bank Details: ${vendorFields.bank_details}`
                 : undefined,

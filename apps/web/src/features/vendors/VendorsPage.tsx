@@ -61,7 +61,14 @@ type FilterValue = "all" | VendorStatus;
 
 export function VendorsPage({ token }: { token: string }) {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "procurement_officer";
+  // Admin: can verify (pending→active) and block/unblock. Cannot create or edit.
+  const isAdminOnly = user?.role === "admin";
+  // Officer: can create, edit, block/unblock. Cannot verify (admin-only action).
+  const isOfficer = user?.role === "procurement_officer";
+  // Either admin or officer can perform block/unblock actions
+  const canManageStatus = isAdminOnly || isOfficer;
+  // Either admin or officer see action column
+  const showActions = isAdminOnly || isOfficer;
 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [categories, setCategories] = useState<VendorCategory[]>([]);
@@ -168,6 +175,20 @@ export function VendorsPage({ token }: { token: string }) {
     }
   }
 
+  async function handleVerify(vendor: Vendor) {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.verifyVendor(token, vendor.id);
+      setNotice(`${vendor.name} verified and activated`);
+      await loadVendors();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "Could not verify vendor");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function toggleBlocked(vendor: Vendor) {
     setBusy(true);
     setError(null);
@@ -198,8 +219,15 @@ export function VendorsPage({ token }: { token: string }) {
     <div className="space-y-5">
       {/* Header row */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h2 className="font-headline-md text-headline-md text-on-surface">Vendors</h2>
-        {isAdmin && (
+        <div>
+          <h2 className="font-headline-md text-headline-md text-on-surface">Vendors</h2>
+          {isAdminOnly && (
+            <p className="text-xs text-on-surface-variant mt-0.5">
+              Verify self-registered vendors to activate them on the platform
+            </p>
+          )}
+        </div>
+        {isOfficer && (
           <button
             className="btn-primary"
             onClick={() => {
@@ -225,8 +253,8 @@ export function VendorsPage({ token }: { token: string }) {
         </div>
       )}
 
-      {/* Add/Edit form */}
-      {showForm && isAdmin && (
+      {/* Add/Edit form — officer only */}
+      {showForm && isOfficer && (
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-title-sm text-title-sm text-on-surface">
@@ -383,7 +411,7 @@ export function VendorsPage({ token }: { token: string }) {
                 <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide">Contact</th>
                 <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide">Stage</th>
                 <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide">Status</th>
-                {isAdmin && <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide text-right">Actions</th>}
+                {showActions && <th className="px-4 py-3 text-label-bold text-label-bold text-on-surface-variant font-semibold uppercase tracking-wide text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant text-body-dense">
@@ -414,28 +442,45 @@ export function VendorsPage({ token }: { token: string }) {
                   <td className="px-4 py-3">
                     <StatusBadge status={vendor.status} />
                   </td>
-                  {isAdmin && (
+                  {showActions && (
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
-                        <button
-                          className="btn-secondary h-8 w-8 px-0"
-                          onClick={() => startEdit(vendor)}
-                          title="Edit vendor"
-                        >
-                          <Edit3 size={14} />
-                        </button>
-                        <button
-                          className={
-                            vendor.status === "blocked"
-                              ? "btn-secondary h-8 w-8 px-0"
-                              : "btn-danger h-8 w-8 px-0"
-                          }
-                          disabled={busy}
-                          onClick={() => toggleBlocked(vendor)}
-                          title={vendor.status === "blocked" ? "Unblock" : "Block"}
-                        >
-                          {vendor.status === "blocked" ? <RotateCcw size={14} /> : <Ban size={14} />}
-                        </button>
+                        {/* Admin: verify pending vendors */}
+                        {isAdminOnly && vendor.status === "pending" && (
+                          <button
+                            className="btn-primary h-8 px-3 text-xs"
+                            disabled={busy}
+                            onClick={() => handleVerify(vendor)}
+                            title="Verify &amp; activate vendor"
+                          >
+                            Verify
+                          </button>
+                        )}
+                        {/* Officer: edit vendor details */}
+                        {isOfficer && (
+                          <button
+                            className="btn-secondary h-8 w-8 px-0"
+                            onClick={() => startEdit(vendor)}
+                            title="Edit vendor"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                        )}
+                        {/* Both admin and officer can block/unblock */}
+                        {canManageStatus && vendor.status !== "pending" && (
+                          <button
+                            className={
+                              vendor.status === "blocked"
+                                ? "btn-secondary h-8 w-8 px-0"
+                                : "btn-danger h-8 w-8 px-0"
+                            }
+                            disabled={busy}
+                            onClick={() => toggleBlocked(vendor)}
+                            title={vendor.status === "blocked" ? "Unblock" : "Block"}
+                          >
+                            {vendor.status === "blocked" ? <RotateCcw size={14} /> : <Ban size={14} />}
+                          </button>
+                        )}
                       </div>
                     </td>
                   )}
@@ -445,7 +490,7 @@ export function VendorsPage({ token }: { token: string }) {
                 <tr>
                   <td
                     className="px-4 py-10 text-center text-on-surface-variant"
-                    colSpan={isAdmin ? 7 : 6}
+                    colSpan={showActions ? 7 : 6}
                   >
                     No vendors match the current filters.
                   </td>

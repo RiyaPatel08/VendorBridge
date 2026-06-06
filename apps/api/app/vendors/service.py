@@ -1,9 +1,12 @@
+import json
+
 from fastapi import HTTPException, status
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Select, func, or_, select, text
 from sqlalchemy.orm import Session
 
 from app.activity.service import append_activity_log
 from app.common.enums import LifecycleStage, VendorStatus
+from app.db.optimizations import is_postgres
 from app.models.entities import User, Vendor, VendorCategory
 from app.vendors.schemas import VendorCreate, VendorUpdate
 from app.vendors.validators import is_valid_gstin, is_valid_pan, normalize_gstin, normalize_pan
@@ -57,16 +60,36 @@ def build_vendor_query(
     search: str | None,
     status_filter: VendorStatus | None,
     category_id: int | None,
+    attributes: dict | None = None,
+    use_postgres_features: bool = False,
 ) -> Select[tuple[Vendor]]:
     query = select(Vendor)
     if search:
-        like = f"%{search.strip()}%"
+        term = search.strip()
+        if use_postgres_features:
+            # Native full-text search: tokenized + stemmed via the generated
+            # ``search_vector`` column and its GIN index. ``websearch_to_tsquery``
+            # accepts human query syntax (quotes, OR, -negation) safely.
+            query = query.where(
+                text(
+                    "vendors.search_vector @@ websearch_to_tsquery('english', :fts_query)"
+                ).bindparams(fts_query=term)
+            )
+        else:
+            like = f"%{term}%"
+            query = query.where(
+                or_(
+                    Vendor.name.ilike(like),
+                    Vendor.gstin.ilike(like),
+                    Vendor.contact_email.ilike(like),
+                    Vendor.city.ilike(like),
+                )
+            )
+    if attributes and use_postgres_features:
+        # JSONB containment uses the GIN index: e.g. {"iso_certified": true}.
         query = query.where(
-            or_(
-                Vendor.name.ilike(like),
-                Vendor.gstin.ilike(like),
-                Vendor.contact_email.ilike(like),
-                Vendor.city.ilike(like),
+            text("vendors.custom_attributes @> cast(:attrs as jsonb)").bindparams(
+                attrs=json.dumps(attributes)
             )
         )
     if status_filter:
@@ -104,6 +127,7 @@ def create_vendor(db: Session, payload: VendorCreate, actor: User) -> Vendor:
         is_gstin_verified=gst_verified,
         is_pan_verified=pan_verified,
         compliance_notes=payload.compliance_notes,
+        custom_attributes=payload.custom_attributes or {},
         created_by_id=actor.id,
     )
     db.add(vendor)
@@ -192,8 +216,15 @@ def list_vendors(
     category_id: int | None,
     page: int,
     page_size: int,
+    attributes: dict | None = None,
 ) -> tuple[list[Vendor], int]:
-    query = build_vendor_query(search=search, status_filter=status_filter, category_id=category_id)
+    query = build_vendor_query(
+        search=search,
+        status_filter=status_filter,
+        category_id=category_id,
+        attributes=attributes,
+        use_postgres_features=is_postgres(db),
+    )
     count_query = select(func.count()).select_from(query.subquery())
     total = db.scalar(count_query) or 0
     vendors = db.scalars(query.offset((page - 1) * page_size).limit(page_size)).all()

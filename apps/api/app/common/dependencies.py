@@ -8,10 +8,25 @@ from sqlalchemy.orm import Session
 
 from app.common.enums import UserRole
 from app.core.security import decode_access_token
+from app.db.optimizations import set_rls_context
 from app.db.session import get_db
-from app.models.entities import User
+from app.models.entities import User, Vendor
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+
+def _bind_tenant_context(db: Session, user: User) -> None:
+    """Push the principal into the DB session for row-level security.
+
+    Vendor users are mapped to their vendor record by contact email so the RLS
+    policies can isolate quotations/invites to that single vendor. For all other
+    roles no vendor id is bound, which the policy treats as full visibility.
+    """
+
+    vendor_id: int | None = None
+    if user.role == UserRole.vendor.value:
+        vendor_id = db.scalar(select(Vendor.id).where(Vendor.contact_email == user.email))
+    set_rls_context(db, role=user.role, vendor_id=vendor_id)
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
@@ -32,6 +47,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.scalar(select(User).where(User.id == user_id, User.is_active.is_(True)))
     if user is None:
         raise credentials_error
+    _bind_tenant_context(db, user)
     return user
 
 

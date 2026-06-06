@@ -72,7 +72,20 @@ export type VendorRegistrationFields = {
   state: string;
   city: string;
   category_name: string;
+  contact_phone: string;
   bank_details?: string;
+};
+
+export type VendorSelfRegisterPayload = {
+  name: string;
+  legal_name?: string;
+  category_id: number;
+  gstin: string;
+  pan?: string;
+  state: string;
+  city: string;
+  contact_phone: string;
+  compliance_notes?: string;
 };
 
 export type VendorPayload = {
@@ -151,8 +164,12 @@ export const api = {
     request<VendorListResponse>(`/vendors?${params.toString()}`, {}, token),
   createVendor: (token: string, payload: VendorPayload) =>
     request<Vendor>("/vendors", { method: "POST", body: JSON.stringify(payload) }, token),
+  selfRegisterVendor: (token: string, payload: VendorSelfRegisterPayload) =>
+    request<Vendor>("/vendors/self-register", { method: "POST", body: JSON.stringify(payload) }, token),
   updateVendor: (token: string, id: number, payload: Partial<VendorPayload>) =>
     request<Vendor>(`/vendors/${id}`, { method: "PATCH", body: JSON.stringify(payload) }, token),
+  verifyVendor: (token: string, id: number) =>
+    request<Vendor>(`/vendors/${id}/verify`, { method: "POST" }, token),
   blockVendor: (token: string, id: number) =>
     request<Vendor>(`/vendors/${id}/block`, { method: "POST" }, token),
   unblockVendor: (token: string, id: number) =>

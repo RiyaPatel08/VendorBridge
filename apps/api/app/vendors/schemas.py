@@ -43,6 +43,7 @@ class VendorBase(BaseModel):
     completion_rate: Decimal = Field(default=Decimal("0.00"), ge=0, le=100)
     satisfaction_score: Decimal = Field(default=Decimal("0.00"), ge=0, le=100)
     compliance_notes: str | None = None
+    custom_attributes: dict = Field(default_factory=dict)
 
     @field_validator("gstin")
     @classmethod
@@ -64,6 +65,30 @@ class VendorCreate(VendorBase):
     pass
 
 
+class VendorSelfRegister(BaseModel):
+    """Vendor self-registration — contact info is derived from the authenticated user."""
+
+    name: str = Field(min_length=2, max_length=160)
+    legal_name: str | None = Field(default=None, max_length=200)
+    category_id: int
+    gstin: str = Field(min_length=15, max_length=15)
+    pan: str | None = Field(default=None, min_length=10, max_length=10)
+    state: str = Field(min_length=2, max_length=80)
+    city: str = Field(min_length=2, max_length=100)
+    contact_phone: str = Field(min_length=7, max_length=32)
+    compliance_notes: str | None = None
+
+    @field_validator("gstin")
+    @classmethod
+    def normalize_gstin_value(cls, value: str) -> str:
+        return normalize_gstin(value)
+
+    @field_validator("pan")
+    @classmethod
+    def normalize_pan_value(cls, value: str | None) -> str | None:
+        return normalize_pan(value)
+
+
 class VendorUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=160)
     legal_name: str | None = Field(default=None, max_length=200)
@@ -83,6 +108,7 @@ class VendorUpdate(BaseModel):
     completion_rate: Decimal | None = Field(default=None, ge=0, le=100)
     satisfaction_score: Decimal | None = Field(default=None, ge=0, le=100)
     compliance_notes: str | None = None
+    custom_attributes: dict | None = None
 
     @field_validator("gstin")
     @classmethod
@@ -123,6 +149,7 @@ class VendorRead(BaseModel):
     is_gstin_verified: bool
     is_pan_verified: bool
     compliance_notes: str | None
+    custom_attributes: dict = Field(default_factory=dict)
     compliance_badge: str = ""
     created_at: datetime
     updated_at: datetime

@@ -1,4 +1,5 @@
-from app.models.entities import VendorCategory
+from app.core.security import hash_password
+from app.models.entities import User, VendorCategory
 from tests.conftest import get_client, get_test_db, reset_db
 
 
@@ -11,6 +12,18 @@ def test_auth_and_vendor_management_flow() -> None:
     db = next(get_test_db())
     try:
         db.add(VendorCategory(name="Furniture", code="FURN", is_active=True))
+        # Admin accounts are provisioned by the platform, not via self-register.
+        db.add(
+            User(
+                email="admin@example.test",
+                first_name="Asha",
+                last_name="Admin",
+                phone="+91 90000 00001",
+                role="admin",
+                hashed_password=hash_password("VendorBridge@123"),
+                is_active=True,
+            )
+        )
         db.commit()
     finally:
         db.close()
@@ -67,8 +80,15 @@ def test_auth_and_vendor_management_flow() -> None:
     assert list_response.status_code == 200
     assert list_response.json()["total"] == 1
 
+    admin_login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@example.test", "password": "VendorBridge@123"},
+    )
+    assert admin_login.status_code == 200
+    admin_token = admin_login.json()["access_token"]
+
     block_response = client.post(
-        f"/api/v1/vendors/{vendor['id']}/block", headers=auth_header(token)
+        f"/api/v1/vendors/{vendor['id']}/block", headers=auth_header(admin_token)
     )
     assert block_response.status_code == 200
     assert block_response.json()["status"] == "blocked"
