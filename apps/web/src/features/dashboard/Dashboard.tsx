@@ -1,4 +1,17 @@
 import { useEffect, useState } from "react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { api, ApiError } from "../../lib/api";
 import type { DashboardStats } from "../../lib/types";
 import { useAuth } from "../auth/AuthContext";
@@ -14,6 +27,8 @@ const initialStats: DashboardStats = {
   ledger_entries: 0,
   recent_purchase_orders: [],
   recent_invoices: [],
+  spending_trend: [],
+  lifecycle_distribution: [],
 };
 
 const STATUS_PILL: Record<string, string> = {
@@ -27,7 +42,29 @@ const STATUS_PILL: Record<string, string> = {
   closed: "bg-surface-container-high text-on-surface-variant border border-outline-variant",
   payable: "bg-secondary/10 text-secondary border border-secondary/20",
   paid: "bg-tertiary/10 text-tertiary border border-tertiary/20",
+  not_started: "bg-surface-container text-on-surface-variant border border-outline-variant",
+  shipped: "bg-primary/10 text-primary border border-primary/20",
+  in_transit: "bg-primary-container/30 text-primary border border-primary/20",
+  delivered: "bg-secondary/10 text-secondary border border-secondary/20",
+  matched: "bg-secondary/10 text-secondary border border-secondary/20",
 };
+
+const LIFECYCLE_COLORS: Record<string, string> = {
+  potential: "#80747b",
+  emerging: "#60d9d5",
+  verified: "#6d4262",
+  trusted: "#006a68",
+  preferred: "#005d1e",
+};
+
+const PROCESS_STEPS = [
+  { key: "rfq", label: "RFQ", icon: "📋" },
+  { key: "quotes", label: "Quotes", icon: "💬" },
+  { key: "approval", label: "Approval", icon: "✅" },
+  { key: "po", label: "PO", icon: "🛒" },
+  { key: "invoice", label: "Invoice", icon: "🧾" },
+  { key: "paid", label: "Paid", icon: "💰" },
+];
 
 function StatusPill({ value }: { value: string }) {
   const cls = STATUS_PILL[value?.toLowerCase()] ?? STATUS_PILL.draft;
@@ -35,6 +72,41 @@ function StatusPill({ value }: { value: string }) {
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold uppercase ${cls}`}>
       {value?.replace(/_/g, " ")}
     </span>
+  );
+}
+
+function ProcessMap({ stats }: { stats: DashboardStats }) {
+  const stepCounts = [
+    stats.active_rfqs,
+    stats.rfqs > 0 ? "—" : 0,
+    stats.pending_approvals,
+    stats.purchase_orders,
+    stats.invoices,
+    "—",
+  ];
+
+  return (
+    <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-card p-5">
+      <h3 className="font-title-sm text-title-sm text-on-surface mb-4">ERP Procurement Workflow</h3>
+      <div className="flex items-center justify-between gap-1 overflow-x-auto">
+        {PROCESS_STEPS.map((step, i) => (
+          <div key={step.key} className="flex items-center min-w-0">
+            <div className="flex flex-col items-center min-w-[70px]">
+              <div className="w-11 h-11 rounded-full bg-primary-container flex items-center justify-center text-lg shadow-sm">
+                {step.icon}
+              </div>
+              <p className="mt-1.5 text-xs font-bold text-on-surface">{step.label}</p>
+              <p className="text-[11px] text-on-surface-variant font-semibold">{stepCounts[i]}</p>
+            </div>
+            {i < PROCESS_STEPS.length - 1 && (
+              <div className="flex-1 min-w-[20px] mx-1">
+                <div className="h-0.5 bg-gradient-to-r from-primary-container to-outline-variant rounded-full" />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -75,7 +147,7 @@ export function Dashboard({ token }: { token: string }) {
       iconBg: "bg-error-container text-on-error-container",
       icon: (
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3z"/>
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
         </svg>
       ),
     },
@@ -86,7 +158,7 @@ export function Dashboard({ token }: { token: string }) {
       iconBg: "bg-secondary/10 text-secondary",
       icon: (
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+          <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
         </svg>
       ),
     },
@@ -102,35 +174,6 @@ export function Dashboard({ token }: { token: string }) {
       ),
     },
   ].filter((card) => isApprover || card.label !== "Pending Approvals");
-
-  const summaryCards =
-    role === "vendor"
-      ? [
-          { label: "My RFQs", value: stats.rfqs },
-          { label: "My Purchase Orders", value: stats.purchase_orders },
-          { label: "My Invoices", value: stats.invoices },
-          { label: "Active Profile", value: stats.active_vendors ? "Yes" : "No" },
-        ]
-      : role === "admin"
-        ? [
-            { label: "Total Vendors", value: stats.vendors },
-            { label: "Active Vendors", value: stats.active_vendors },
-            { label: "Total RFQs", value: stats.rfqs },
-            { label: "Ledger Entries", value: stats.ledger_entries },
-          ]
-        : isApprover
-          ? [
-              { label: "Pending Approvals", value: stats.pending_approvals },
-              { label: "Total RFQs", value: stats.rfqs },
-              { label: "Purchase Orders", value: stats.purchase_orders },
-              { label: "Invoices", value: stats.invoices },
-            ]
-          : [
-              { label: "Active Vendors", value: stats.active_vendors },
-              { label: "Total RFQs", value: stats.rfqs },
-              { label: "Purchase Orders", value: stats.purchase_orders },
-              { label: "Invoices", value: stats.invoices },
-            ];
 
   return (
     <div className="space-y-6">
@@ -150,6 +193,9 @@ export function Dashboard({ token }: { token: string }) {
         </p>
       </div>
 
+      {/* ERP Process Map */}
+      <ProcessMap stats={stats} />
+
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {statCards.map((card) => (
@@ -168,22 +214,127 @@ export function Dashboard({ token }: { token: string }) {
         ))}
       </div>
 
+      {/* Charts row */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
+        {/* Spending Trend Area Chart */}
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-outline-variant bg-surface-bright">
+            <h3 className="font-title-sm text-title-sm text-on-surface">Spending Trend</h3>
+            <p className="text-label-sm text-on-surface-variant mt-0.5">Monthly procurement spend from invoices</p>
+          </div>
+          <div className="p-4 h-64">
+            {stats.spending_trend.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.spending_trend}>
+                  <defs>
+                    <linearGradient id="spendGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6d4262" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#6d4262" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e1e2e4" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#4e444a" }} />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#4e444a" }}
+                    tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#fff",
+                      border: "1px solid #d2c2ca",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                    }}
+                    formatter={(value: number) => [`₹${value.toLocaleString("en-IN")}`, "Spend"]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="spend"
+                    stroke="#6d4262"
+                    strokeWidth={2.5}
+                    fill="url(#spendGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-on-surface-variant text-sm">
+                No invoice data yet
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Vendor Lifecycle Distribution Pie Chart */}
+        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-outline-variant bg-surface-bright">
+            <h3 className="font-title-sm text-title-sm text-on-surface">Vendor Ecosystem</h3>
+            <p className="text-label-sm text-on-surface-variant mt-0.5">Distribution by lifecycle stage</p>
+          </div>
+          <div className="p-4 h-64">
+            {stats.lifecycle_distribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stats.lifecycle_distribution}
+                    dataKey="count"
+                    nameKey="stage"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    strokeWidth={2}
+                    stroke="#fff"
+                  >
+                    {stats.lifecycle_distribution.map((entry) => (
+                      <Cell
+                        key={entry.stage}
+                        fill={LIFECYCLE_COLORS[entry.stage] ?? "#80747b"}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: "#fff",
+                      border: "1px solid #d2c2ca",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                    }}
+                    formatter={(value: number, name: string) => [value, name.charAt(0).toUpperCase() + name.slice(1)]}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    formatter={(value: string) => (
+                      <span className="text-xs font-semibold text-on-surface-variant capitalize">{value}</span>
+                    )}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-on-surface-variant text-sm">
+                No vendor data yet
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Recent tables */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {/* Recent Purchase Orders */}
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-bright">
             <h3 className="font-title-sm text-title-sm text-on-surface">Recent Purchase Orders</h3>
-            <span className="text-label-bold text-label-bold text-on-surface-variant">{stats.purchase_orders} total</span>
+            <span className="text-label-bold text-on-surface-variant">{stats.purchase_orders} total</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
-                  <th className="px-4 py-2.5 text-label-bold text-label-bold font-semibold uppercase tracking-wide">PO No.</th>
-                  <th className="px-4 py-2.5 text-label-bold text-label-bold font-semibold uppercase tracking-wide">Vendor</th>
-                  <th className="px-4 py-2.5 text-label-bold text-label-bold font-semibold uppercase tracking-wide">Status</th>
-                  <th className="px-4 py-2.5 text-label-bold text-label-bold font-semibold uppercase tracking-wide text-right">Amount</th>
+                  <th className="px-4 py-2.5 text-label-bold font-semibold uppercase tracking-wide">PO No.</th>
+                  <th className="px-4 py-2.5 text-label-bold font-semibold uppercase tracking-wide">Vendor</th>
+                  <th className="px-4 py-2.5 text-label-bold font-semibold uppercase tracking-wide">Status</th>
+                  <th className="px-4 py-2.5 text-label-bold font-semibold uppercase tracking-wide text-right">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant text-body-dense">
@@ -215,16 +366,16 @@ export function Dashboard({ token }: { token: string }) {
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-bright">
             <h3 className="font-title-sm text-title-sm text-on-surface">Recent Invoices</h3>
-            <span className="text-label-bold text-label-bold text-on-surface-variant">{stats.invoices} total</span>
+            <span className="text-label-bold text-on-surface-variant">{stats.invoices} total</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
-                  <th className="px-4 py-2.5 text-label-bold text-label-bold font-semibold uppercase tracking-wide">Invoice No.</th>
-                  <th className="px-4 py-2.5 text-label-bold text-label-bold font-semibold uppercase tracking-wide">Vendor</th>
-                  <th className="px-4 py-2.5 text-label-bold text-label-bold font-semibold uppercase tracking-wide">Status</th>
-                  <th className="px-4 py-2.5 text-label-bold text-label-bold font-semibold uppercase tracking-wide text-right">Amount</th>
+                  <th className="px-4 py-2.5 text-label-bold font-semibold uppercase tracking-wide">Invoice No.</th>
+                  <th className="px-4 py-2.5 text-label-bold font-semibold uppercase tracking-wide">Vendor</th>
+                  <th className="px-4 py-2.5 text-label-bold font-semibold uppercase tracking-wide">Status</th>
+                  <th className="px-4 py-2.5 text-label-bold font-semibold uppercase tracking-wide text-right">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant text-body-dense">
@@ -251,16 +402,6 @@ export function Dashboard({ token }: { token: string }) {
             </table>
           </div>
         </div>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {summaryCards.map((item) => (
-          <div key={item.label} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-card">
-            <p className="text-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">{item.label}</p>
-            <p className="font-title-sm text-title-sm text-on-surface mt-2">{item.value}</p>
-          </div>
-        ))}
       </div>
     </div>
   );

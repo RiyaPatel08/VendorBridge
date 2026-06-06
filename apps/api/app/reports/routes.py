@@ -158,6 +158,29 @@ def dashboard_stats(
                 "grand_total": float(invoice.grand_total),
             }
         )
+    # Spending trend — monthly invoice totals for dashboard chart
+    all_invoices = db.scalars(select(Invoice).order_by(Invoice.created_at.asc())).all()
+    monthly_spend: dict[str, float] = defaultdict(float)
+    for inv in all_invoices:
+        month_key = inv.created_at.strftime("%b")
+        monthly_spend[month_key] += float(inv.grand_total)
+    spending_trend = [{"month": m, "spend": s} for m, s in monthly_spend.items()]
+
+    # Lifecycle distribution — vendor counts by stage for dashboard pie chart
+    lifecycle_stages = ["potential", "emerging", "verified", "trusted", "preferred"]
+    lifecycle_distribution = []
+    for stage in lifecycle_stages:
+        count = (
+            db.scalar(
+                select(func.count())
+                .select_from(Vendor)
+                .where(Vendor.lifecycle_stage == stage)
+            )
+            or 0
+        )
+        if count > 0:
+            lifecycle_distribution.append({"stage": stage, "count": count})
+
     return {
         "vendors": vendor_count,
         "active_vendors": active_vendors,
@@ -169,6 +192,8 @@ def dashboard_stats(
         "ledger_entries": ledger_count,
         "recent_purchase_orders": recent_pos,
         "recent_invoices": recent_invoices,
+        "spending_trend": spending_trend,
+        "lifecycle_distribution": lifecycle_distribution,
     }
 
 

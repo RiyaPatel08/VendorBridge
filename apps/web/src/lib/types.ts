@@ -91,6 +91,8 @@ export type DashboardStats = {
     match_status: string;
     grand_total: number;
   }>;
+  spending_trend: Array<{ month: string; spend: number }>;
+  lifecycle_distribution: Array<{ stage: string; count: number }>;
 };
 
 export type ActivityLog = {
