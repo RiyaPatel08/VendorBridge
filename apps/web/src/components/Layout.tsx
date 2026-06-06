@@ -15,22 +15,28 @@ import {
 import { roleLabel } from "../lib/format";
 import { useAuth } from "../features/auth/AuthContext";
 
-export type ViewKey = "dashboard" | "vendors" | "activity";
+export type ViewKey =
+  | "dashboard"
+  | "vendors"
+  | "rfqs"
+  | "quotations"
+  | "approvals"
+  | "purchaseOrders"
+  | "invoices"
+  | "reports"
+  | "activity";
 
 const navItems = [
   { key: "dashboard", label: "Dashboard", icon: Home },
   { key: "vendors", label: "Vendors", icon: Store },
+  { key: "rfqs", label: "RFQs", icon: ClipboardList },
+  { key: "quotations", label: "Quotations", icon: FileText },
+  { key: "approvals", label: "Approvals", icon: ShieldCheck },
+  { key: "purchaseOrders", label: "Purchase Orders", icon: ShoppingCart },
+  { key: "invoices", label: "Invoices", icon: ReceiptIndianRupee },
+  { key: "reports", label: "Reports", icon: BarChart3 },
   { key: "activity", label: "Activity", icon: Activity },
 ] satisfies { key: ViewKey; label: string; icon: typeof Home }[];
-
-const plannedItems = [
-  { label: "RFQs", icon: ClipboardList },
-  { label: "Quotations", icon: FileText },
-  { label: "Approvals", icon: ShieldCheck },
-  { label: "Purchase Orders", icon: ShoppingCart },
-  { label: "Invoices", icon: ReceiptIndianRupee },
-  { label: "Reports", icon: BarChart3 },
-];
 
 export function Layout({
   activeView,
@@ -71,17 +77,6 @@ export function Layout({
                 {item.label}
               </button>
             ))}
-            <div className="pt-3">
-              {plannedItems.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-slate-500"
-                >
-                  <item.icon size={18} />
-                  {item.label}
-                </div>
-              ))}
-            </div>
           </nav>
           <div className="border-t border-slate-800 p-3">
             <button
@@ -101,7 +96,7 @@ export function Layout({
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase text-slate-500">VendorBridge</p>
               <h1 className="truncate text-lg font-semibold text-ink">
-                {activeView === "dashboard" ? "Dashboard" : activeView === "vendors" ? "Vendors" : "Activity"}
+                {navItems.find((item) => item.key === activeView)?.label ?? "VendorBridge"}
               </h1>
             </div>
             <div className="flex items-center gap-3">
@@ -139,4 +134,3 @@ export function Layout({
     </div>
   );
 }
-

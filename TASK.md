@@ -22,7 +22,7 @@ This file tracks current work, milestones, backlog, implementation tasks, discov
 - [x] Repository scaffold created.
 - [x] PostgreSQL + Redis (Docker Compose) initialized.
 - [x] First migration created.
-- [ ] End-to-end RFQ-to-invoice golden-path demo implemented.
+- [x] End-to-end RFQ-to-invoice golden-path demo implemented.
 
 ## 1.5 Team Roster and Ownership
 
@@ -82,7 +82,7 @@ Do these first, in order.
 - [x] Set up PostgreSQL + Redis locally via Docker Compose.
 - [x] Create initial database migration for core tables (incl. lifecycle, ratings, risk, split/delivery fields, ledger + ledger blocks).
 - [x] Seed demo users, vendors (across all lifecycle stages), RFQ, quotations, approval, PO, invoice, and activity logs.
-- [ ] Build vertical slices (backend + clean validated UI together), golden path first.
+- [x] Build vertical slices (backend + clean validated UI together), golden path first.
 
 ## 3. Milestones
 
@@ -183,20 +183,20 @@ Acceptance:
 
 Goal: RFQ creation with line items and vendor assignment.
 
-- [ ] RFQ create API.
-- [ ] RFQ update draft API.
-- [ ] RFQ send API.
-- [ ] RFQ list/detail API.
-- [ ] RFQ line item validation.
-- [ ] Vendor assignment table.
-- [ ] Invite token generation.
-- [ ] Activity log on create/send/vendor invite.
-- [ ] RFQ list UI.
-- [ ] RFQ create form UI.
-- [ ] Line item editor.
-- [ ] Vendor multi-select.
-- [ ] Save draft.
-- [ ] Save and send.
+- [x] RFQ create API.
+- [x] RFQ update draft API.
+- [x] RFQ send API.
+- [x] RFQ list/detail API.
+- [x] RFQ line item validation.
+- [x] Vendor assignment table.
+- [x] Invite token generation.
+- [x] Activity log on create/send/vendor invite.
+- [x] RFQ list UI.
+- [x] RFQ create form UI.
+- [x] Line item editor.
+- [x] Vendor multi-select.
+- [x] Save draft.
+- [x] Save and send.
 
 Acceptance:
 
@@ -206,19 +206,19 @@ Acceptance:
 
 Goal: Vendors can submit quotes against assigned RFQs.
 
-- [ ] Vendor RFQ list API.
-- [ ] Vendor RFQ detail API.
-- [ ] Quotation draft create/update API.
-- [ ] Quotation submit API.
-- [ ] Quotation line item totals.
-- [ ] GST calculation.
-- [ ] Deadline guard.
-- [ ] Activity log on draft save and submit.
-- [ ] Vendor portal RFQ list UI.
-- [ ] Vendor quotation form UI.
-- [ ] Live subtotal/GST/grand total.
-- [ ] Save draft button.
-- [ ] Submit quotation button.
+- [x] Vendor RFQ list API.
+- [x] Vendor RFQ detail API.
+- [x] Quotation draft create/update API.
+- [x] Quotation submit API.
+- [x] Quotation line item totals.
+- [x] GST calculation.
+- [x] Deadline guard.
+- [x] Activity log on draft save and submit.
+- [x] Vendor portal RFQ list UI.
+- [x] Vendor quotation form UI.
+- [x] Live subtotal/GST/grand total.
+- [x] Save draft button.
+- [x] Submit quotation button.
 
 Acceptance:
 
@@ -228,18 +228,18 @@ Acceptance:
 
 Goal: Procurement can compare quotes and select a vendor.
 
-- [ ] Comparison API for RFQ.
-- [ ] Lowest price calculation.
-- [ ] Fastest delivery calculation.
-- [ ] Best Value Score calculation.
-- [ ] Score breakdown.
-- [ ] Sort and filter.
-- [ ] Select quotation API.
-- [ ] Activity log on selection.
-- [ ] Comparison table UI.
-- [ ] Lowest price highlight.
-- [ ] Score bars or radar chart.
-- [ ] Select and approve action.
+- [x] Comparison API for RFQ.
+- [x] Lowest price calculation.
+- [x] Fastest delivery calculation.
+- [x] Best Value Score calculation.
+- [x] Score breakdown.
+- [x] Sort and filter.
+- [x] Select quotation API.
+- [x] Activity log on selection.
+- [x] Comparison table UI.
+- [x] Lowest price highlight.
+- [x] Score bars or radar chart.
+- [x] Select and approve action.
 
 Acceptance:
 
@@ -249,21 +249,21 @@ Acceptance:
 
 Goal: Manager can approve/reject with policy context and budget impact.
 
-- [ ] Approval request creation after quote selection.
-- [ ] Threshold-based approval route.
-- [ ] Policy reason generation.
-- [ ] Budget impact calculation.
-- [ ] Approval detail API.
-- [ ] Approve endpoint.
-- [ ] Reject endpoint.
-- [ ] Remarks validation.
-- [ ] Approval timeline.
-- [ ] Activity log on approval request/approval/rejection.
-- [ ] Approval list UI.
-- [ ] Approval detail UI.
-- [ ] Budget Impact Preview component.
-- [ ] Policy reason badges.
-- [ ] Approval stepper.
+- [x] Approval request creation after quote selection.
+- [x] Threshold-based approval route.
+- [x] Policy reason generation.
+- [x] Budget impact calculation.
+- [x] Approval detail API.
+- [x] Approve endpoint.
+- [x] Reject endpoint.
+- [x] Remarks validation.
+- [x] Approval timeline.
+- [x] Activity log on approval request/approval/rejection.
+- [x] Approval list UI.
+- [x] Approval detail UI.
+- [x] Budget Impact Preview component.
+- [x] Policy reason badges.
+- [x] Approval stepper.
 
 Acceptance:
 
@@ -273,22 +273,22 @@ Acceptance:
 
 Goal: Approved quotation generates official PO and invoice.
 
-- [ ] Generate PO endpoint.
-- [ ] PO number generation.
-- [ ] PO line copy from quotation.
-- [ ] PO list/detail API.
-- [ ] Generate invoice endpoint.
-- [ ] Invoice number generation.
-- [ ] Invoice tax totals.
-- [ ] Invoice list/detail API.
-- [ ] Invoice status update.
-- [ ] Download/print action logging.
-- [ ] Email invoice action writes to `email_outbox`.
-- [ ] PO detail UI.
-- [ ] Invoice detail UI.
-- [ ] Print-friendly invoice layout.
-- [ ] Download PDF or printable HTML.
-- [ ] Email invoice button.
+- [x] Generate PO endpoint.
+- [x] PO number generation.
+- [x] PO line copy from quotation.
+- [x] PO list/detail API.
+- [x] Generate invoice endpoint.
+- [x] Invoice number generation.
+- [x] Invoice tax totals.
+- [x] Invoice list/detail API.
+- [x] Invoice status update.
+- [x] Download/print action logging.
+- [x] Email invoice action writes to `email_outbox`.
+- [x] PO detail UI.
+- [x] Invoice detail UI.
+- [x] Print-friendly invoice layout.
+- [x] Download PDF or printable HTML.
+- [x] Email invoice button.
 
 Acceptance:
 
@@ -298,13 +298,13 @@ Acceptance:
 
 Goal: Show ERP maturity before invoice is payable.
 
-- [ ] Add received quantity to PO item.
-- [ ] Add accepted quantity to PO item.
-- [ ] Match check service.
-- [ ] Block payable status if mismatch.
+- [x] Add received quantity to PO item.
+- [x] Add accepted quantity to PO item.
+- [x] Match check service.
+- [x] Block payable status if mismatch.
 - [ ] Override or warning if time permits.
-- [ ] 3-way match UI card.
-- [ ] Activity log on match/pass/fail.
+- [x] 3-way match UI card.
+- [x] Activity log on match/pass/fail.
 
 Acceptance:
 
@@ -314,21 +314,21 @@ Acceptance:
 
 Goal: Make the audit trail a visible, verifiable differentiator.
 
-- [ ] Activity ledger service (shared, called by all modules).
-- [ ] Canonical payload builder.
-- [ ] Hash generation (`entry_hash` from canonical fields + `previous_hash`).
-- [ ] Previous hash lookup + append-only create method.
-- [ ] Merkle block sealing into `activity_log_blocks` (every N entries + on demand).
+- [x] Activity ledger service (shared, called by all modules).
+- [x] Canonical payload builder.
+- [x] Hash generation (`entry_hash` from canonical fields + `previous_hash`).
+- [x] Previous hash lookup + append-only create method.
+- [x] Merkle block sealing into `activity_log_blocks` (every N entries + on demand).
 - [ ] Optional server-signature over entry/block hashes.
-- [ ] No update/delete routes.
-- [ ] DB trigger rejecting UPDATE and DELETE on ledger tables (committed, not optional).
-- [ ] Integrity-verification endpoint (recompute chain + Merkle roots, return PASS/FAIL).
-- [ ] Notification creation for user-facing alerts.
-- [ ] Activity page API + notification list API.
-- [ ] Activity page UI + timeline UI.
-- [ ] Hash chain + block fields visible in detail drawer.
-- [ ] "Verify integrity" button in UI.
-- [ ] No edit/delete controls on logs.
+- [x] No update/delete routes.
+- [x] DB trigger rejecting UPDATE and DELETE on ledger tables (committed, not optional).
+- [x] Integrity-verification endpoint (recompute chain + Merkle roots, return PASS/FAIL).
+- [x] Notification creation for user-facing alerts.
+- [x] Activity page API + notification list API.
+- [x] Activity page UI + timeline UI.
+- [x] Hash chain + block fields visible in detail drawer.
+- [x] "Verify integrity" button in UI.
+- [x] No edit/delete controls on logs.
 
 Acceptance:
 
@@ -338,21 +338,21 @@ Acceptance:
 
 Goal: Show live procurement metrics from database.
 
-- [ ] Dashboard stats API.
-- [ ] Pending approvals widget.
-- [ ] Active RFQs widget.
-- [ ] Recent POs widget.
-- [ ] Recent invoices widget.
-- [ ] Spending trend query.
-- [ ] Reports API.
-- [ ] Vendor performance query.
-- [ ] Spend by category query.
-- [ ] Monthly trend query.
-- [ ] CSV export endpoint.
-- [ ] Dashboard UI.
-- [ ] Reports UI.
-- [ ] Charts.
-- [ ] Export button.
+- [x] Dashboard stats API.
+- [x] Pending approvals widget.
+- [x] Active RFQs widget.
+- [x] Recent POs widget.
+- [x] Recent invoices widget.
+- [x] Spending trend query.
+- [x] Reports API.
+- [x] Vendor performance query.
+- [x] Spend by category query.
+- [x] Monthly trend query.
+- [x] CSV export endpoint.
+- [x] Dashboard UI.
+- [x] Reports UI.
+- [x] Charts.
+- [x] Export button.
 
 Acceptance:
 
@@ -435,16 +435,16 @@ Acceptance:
 
 Goal: Stable presentation.
 
-- [ ] Seed realistic demo dataset.
-- [ ] Add demo credentials to README.
+- [x] Seed realistic demo dataset.
+- [x] Add demo credentials to README.
 - [ ] Run end-to-end demo flow at least twice.
-- [ ] Fix broken navigation.
-- [ ] Fix validation messages.
+- [x] Fix broken navigation.
+- [x] Fix validation messages.
 - [ ] Fix responsive layout issues.
-- [ ] Add loading and empty states.
-- [ ] Add toast notifications.
-- [ ] Run lint/format.
-- [ ] Run backend tests.
+- [x] Add loading and empty states.
+- [x] Add toast notifications.
+- [x] Run lint/format.
+- [x] Run backend tests.
 - [ ] Prepare 5-minute demo script.
 - [ ] Prepare backup screenshots/video if possible.
 - [ ] Assign presentation sections to every teammate.
@@ -517,22 +517,22 @@ Each hour lists work per member (M1-M4). The golden path is the priority; IQ/str
 
 These are mandatory.
 
-- [ ] Auth and roles.
-- [ ] PostgreSQL schema and migrations.
-- [ ] Seed data.
-- [ ] Vendor management.
-- [ ] RFQ creation.
-- [ ] Vendor quotation submission.
-- [ ] Quotation comparison.
-- [ ] Approval workflow.
-- [ ] PO generation.
-- [ ] Invoice generation.
-- [ ] Print/download/email action.
-- [ ] Activity logs.
-- [ ] Dashboard.
-- [ ] Reports.
-- [ ] Validation and error messages.
-- [ ] Git workflow and README.
+- [x] Auth and roles.
+- [x] PostgreSQL schema and migrations.
+- [x] Seed data.
+- [x] Vendor management.
+- [x] RFQ creation.
+- [x] Vendor quotation submission.
+- [x] Quotation comparison.
+- [x] Approval workflow.
+- [x] PO generation.
+- [x] Invoice generation.
+- [x] Print/download/email action.
+- [x] Activity logs.
+- [x] Dashboard.
+- [x] Reports.
+- [x] Validation and error messages.
+- [x] Git workflow and README.
 
 ## 6. P1 Backlog
 
@@ -540,27 +540,27 @@ These are the winning differentiators.
 
 Core:
 
-- [ ] Blockchain-style ledger: hash chain + Merkle blocks + integrity verification.
-- [ ] DB-level append-only protection (trigger) for ledger tables.
+- [x] Blockchain-style ledger: hash chain + Merkle blocks + integrity verification.
+- [x] DB-level append-only protection (trigger) for ledger tables.
 - [ ] Redis caching (analytics aggregates) + login rate limiting.
-- [ ] Best Value Score + score breakdown UI.
-- [ ] Budget Impact Preview.
-- [ ] CGST/SGST vs IGST split.
-- [ ] HSN/SAC validation.
-- [ ] Vendor compliance badge.
+- [x] Best Value Score + score breakdown UI.
+- [x] Budget Impact Preview.
+- [x] CGST/SGST vs IGST split.
+- [x] HSN/SAC validation.
+- [x] Vendor compliance badge.
 - [ ] Vendor radar chart.
-- [ ] 3-way match lite.
-- [ ] ERP process map.
+- [x] 3-way match lite.
+- [x] ERP process map.
 
 VendorBridge IQ intelligence layer:
 
-- [ ] Vendor lifecycle (5 stages) + badges.
+- [x] Vendor lifecycle (5 stages) + badges.
 - [ ] Vendor reputation scores + multi-criteria ratings + feedback loop.
 - [ ] Vendor discovery engine (fair RFQ distribution).
-- [ ] Procurement risk engine (Low/Med/High, 5 dimensions).
-- [ ] PO acceptance flow (accept/reject/request modification).
-- [ ] Delivery tracking (packed -> shipped -> in transit -> delivered).
-- [ ] Vendor growth analytics on dashboard/reports.
+- [x] Procurement risk engine (Low/Med/High, 5 dimensions).
+- [x] PO acceptance flow (accept/reject/request modification).
+- [x] Delivery tracking (packed -> shipped -> in transit -> delivered).
+- [x] Vendor growth analytics on dashboard/reports.
 
 VendorBridge IQ high-complexity (P1-stretch, after the above):
 
@@ -586,24 +586,24 @@ Stretch only.
 
 Backend validation:
 
-- [ ] Invalid email rejected.
-- [ ] Weak password rejected.
-- [ ] Duplicate email rejected.
-- [ ] Invalid GSTIN rejected or flagged.
-- [ ] Invalid PAN rejected or flagged.
-- [ ] Invalid HSN/SAC rejected or flagged.
-- [ ] RFQ deadline must be future.
-- [ ] RFQ must have at least one line item before send.
-- [ ] RFQ must have at least one vendor before send.
-- [ ] Quantity must be positive.
-- [ ] Unit price must be non-negative.
-- [ ] Vendor cannot quote on unassigned RFQ.
-- [ ] Vendor cannot edit submitted quotation after deadline.
-- [ ] Reject approval requires remarks.
-- [ ] Invalid state transitions are blocked.
+- [x] Invalid email rejected.
+- [x] Weak password rejected.
+- [x] Duplicate email rejected.
+- [x] Invalid GSTIN rejected or flagged.
+- [x] Invalid PAN rejected or flagged.
+- [x] Invalid HSN/SAC rejected or flagged.
+- [x] RFQ deadline must be future.
+- [x] RFQ must have at least one line item before send.
+- [x] RFQ must have at least one vendor before send.
+- [x] Quantity must be positive.
+- [x] Unit price must be non-negative.
+- [x] Vendor cannot quote on unassigned RFQ.
+- [x] Vendor cannot edit submitted quotation after deadline.
+- [x] Reject approval requires remarks.
+- [x] Invalid state transitions are blocked.
 - [ ] Vendor cannot view another vendor's quote.
-- [ ] Activity log cannot be edited or deleted (API + DB trigger).
-- [ ] Only assigned vendor can accept/reject a PO or update its delivery status.
+- [x] Activity log cannot be edited or deleted (API + DB trigger).
+- [x] Only assigned vendor can accept/reject a PO or update its delivery status.
 - [ ] Rating values constrained to 1-5; only buyer of a delivered PO can rate.
 - [ ] Partial fulfillment: available/additional quantities are non-negative and not greater than requested.
 - [ ] Split allocation never exceeds requested quantity.
@@ -611,52 +611,52 @@ Backend validation:
 
 Frontend validation:
 
-- [ ] Inline error messages.
-- [ ] Disabled submit for invalid forms.
-- [ ] Toast on success/failure.
+- [x] Inline error messages.
+- [x] Disabled submit for invalid forms.
+- [x] Toast on success/failure.
 - [ ] Confirmation for sensitive actions.
-- [ ] Empty states for empty lists.
-- [ ] Loading states for API requests.
+- [x] Empty states for empty lists.
+- [x] Loading states for API requests.
 
 ## 9. Test Tasks
 
 Minimum tests:
 
-- [ ] GSTIN validator unit test.
-- [ ] PAN validator unit test.
-- [ ] HSN/SAC validator unit test.
-- [ ] Best Value Score unit test.
+- [x] GSTIN validator unit test.
+- [x] PAN validator unit test.
+- [x] HSN/SAC validator unit test.
+- [x] Best Value Score unit test.
 - [ ] Budget Impact Preview unit test.
 - [ ] Approval routing unit test.
-- [ ] Activity hash-chain unit test.
-- [ ] RFQ create API test.
-- [ ] Quotation submit API test.
-- [ ] Approval approve/reject API test.
-- [ ] Vendor authorization test.
+- [x] Activity hash-chain unit test.
+- [x] RFQ create API test.
+- [x] Quotation submit API test.
+- [x] Approval approve/reject API test.
+- [x] Vendor authorization test.
 - [ ] Vendor lifecycle stage derivation unit test.
 - [ ] Reputation score computation unit test.
 - [ ] Risk engine tier (Low/Med/High) unit test.
 - [ ] Discovery engine fair-mix unit test.
-- [ ] Merkle block sealing + integrity verification unit test.
+- [x] Merkle block sealing + integrity verification unit test.
 - [ ] Split allocation engine unit test (partial fulfillment).
 
 Manual smoke tests:
 
-- [ ] Login as Admin.
-- [ ] Login as Procurement Officer.
-- [ ] Login as Vendor.
-- [ ] Login as Manager.
-- [ ] Create vendor.
-- [ ] Create and send RFQ.
-- [ ] Submit quotation.
-- [ ] Compare quotation.
-- [ ] Select quote.
-- [ ] Approve request.
-- [ ] Generate PO.
-- [ ] Generate invoice.
-- [ ] Download/print/email invoice.
-- [ ] View activity logs.
-- [ ] View reports.
+- [x] Login as Admin.
+- [x] Login as Procurement Officer.
+- [x] Login as Vendor.
+- [x] Login as Manager.
+- [x] Create vendor.
+- [x] Create and send RFQ.
+- [x] Submit quotation.
+- [x] Compare quotation.
+- [x] Select quote.
+- [x] Approve request.
+- [x] Generate PO.
+- [x] Generate invoice.
+- [x] Download/print/email invoice.
+- [x] View activity logs.
+- [x] View reports.
 
 ## 10. Repository Insights To Reference During Build
 

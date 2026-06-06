@@ -1,7 +1,19 @@
 import type {
   ActivityLog,
+  Approval,
+  ApprovalListItem,
+  ComparisonResponse,
   DashboardStats,
+  Invoice,
+  InvoiceListItem,
   LedgerVerification,
+  PurchaseOrder,
+  PurchaseOrderListItem,
+  Quotation,
+  QuotationListItem,
+  ReportsSummary,
+  RFQ,
+  RFQListItem,
   TokenResponse,
   UserRole,
   Vendor,
@@ -74,6 +86,38 @@ export type VendorPayload = {
   compliance_notes?: string;
 };
 
+export type RFQPayload = {
+  title: string;
+  category_id: number;
+  description?: string;
+  deadline: string;
+  vendor_ids: number[];
+  items: Array<{
+    item_name: string;
+    hsn_sac: string;
+    quantity: string;
+    unit: string;
+    target_price?: string;
+  }>;
+};
+
+export type QuotationPayload = {
+  rfq_id: number;
+  vendor_id: number;
+  delivery_days: number;
+  payment_terms_days: number;
+  notes?: string;
+  items: Array<{
+    rfq_item_id: number;
+    quantity: string;
+    unit_price: string;
+    gst_percent: string;
+    available_quantity: string;
+    additional_quantity: string;
+    additional_available_days?: number | null;
+  }>;
+};
+
 export const api = {
   login: (email: string, password: string) =>
     request<TokenResponse>("/auth/login", {
@@ -103,7 +147,73 @@ export const api = {
     request<Vendor>(`/vendors/${id}/block`, { method: "POST" }, token),
   unblockVendor: (token: string, id: number) =>
     request<Vendor>(`/vendors/${id}/unblock`, { method: "POST" }, token),
+  rfqs: (token: string) => request<RFQListItem[]>("/rfqs", {}, token),
+  rfq: (token: string, id: number) => request<RFQ>(`/rfqs/${id}`, {}, token),
+  vendorRfqs: (token: string) => request<RFQ[]>("/rfqs/vendor", {}, token),
+  createRfq: (token: string, payload: RFQPayload) =>
+    request<RFQ>("/rfqs", { method: "POST", body: JSON.stringify(payload) }, token),
+  sendRfq: (token: string, id: number) =>
+    request<RFQ>(`/rfqs/${id}/send`, { method: "POST" }, token),
+  quotations: (token: string) => request<QuotationListItem[]>("/quotations", {}, token),
+  saveQuotation: (token: string, payload: QuotationPayload) =>
+    request<Quotation>("/quotations/drafts", { method: "POST", body: JSON.stringify(payload) }, token),
+  submitQuotation: (token: string, id: number) =>
+    request<Quotation>(`/quotations/${id}/submit`, { method: "POST" }, token),
+  comparison: (token: string, rfqId: number) =>
+    request<ComparisonResponse>(`/rfqs/${rfqId}/comparison`, {}, token),
+  selectQuotation: (token: string, rfqId: number, quotationId: number) =>
+    request<{ approval_request_id: number }>(
+      `/rfqs/${rfqId}/select-quotation`,
+      { method: "POST", body: JSON.stringify({ quotation_id: quotationId }) },
+      token,
+    ),
+  approvals: (token: string) => request<ApprovalListItem[]>("/approvals", {}, token),
+  approval: (token: string, id: number) => request<Approval>(`/approvals/${id}`, {}, token),
+  approve: (token: string, id: number, remarks: string) =>
+    request<Approval>(`/approvals/${id}/approve`, { method: "POST", body: JSON.stringify({ remarks }) }, token),
+  reject: (token: string, id: number, remarks: string) =>
+    request<Approval>(`/approvals/${id}/reject`, { method: "POST", body: JSON.stringify({ remarks }) }, token),
+  generatePo: (token: string, approvalId: number) =>
+    request<PurchaseOrder>(`/approvals/${approvalId}/purchase-order`, { method: "POST" }, token),
+  purchaseOrders: (token: string) => request<PurchaseOrderListItem[]>("/purchase-orders", {}, token),
+  purchaseOrder: (token: string, id: number) => request<PurchaseOrder>(`/purchase-orders/${id}`, {}, token),
+  acceptPo: (token: string, id: number) =>
+    request<PurchaseOrder>(`/purchase-orders/${id}/accept`, { method: "POST", body: JSON.stringify({}) }, token),
+  rejectPo: (token: string, id: number) =>
+    request<PurchaseOrder>(
+      `/purchase-orders/${id}/reject`,
+      { method: "POST", body: JSON.stringify({ remarks: "Vendor rejected PO terms." }) },
+      token,
+    ),
+  requestPoModification: (token: string, id: number) =>
+    request<PurchaseOrder>(
+      `/purchase-orders/${id}/request-modification`,
+      { method: "POST", body: JSON.stringify({ remarks: "Vendor requested PO modification." }) },
+      token,
+    ),
+  updateDelivery: (token: string, id: number, statusValue: string) =>
+    request<PurchaseOrder>(
+      `/purchase-orders/${id}/delivery`,
+      { method: "POST", body: JSON.stringify({ status: statusValue }) },
+      token,
+    ),
+  receivePo: (token: string, id: number) =>
+    request<PurchaseOrder>(`/purchase-orders/${id}/receive`, { method: "POST" }, token),
+  generateInvoice: (token: string, poId: number) =>
+    request<Invoice>(`/purchase-orders/${poId}/invoice`, { method: "POST" }, token),
+  invoices: (token: string) => request<InvoiceListItem[]>("/invoices", {}, token),
+  invoice: (token: string, id: number) => request<Invoice>(`/invoices/${id}`, {}, token),
+  markPayable: (token: string, id: number) =>
+    request<Invoice>(`/invoices/${id}/payable`, { method: "POST" }, token),
+  printInvoice: (token: string, id: number) =>
+    request<{ ok: boolean }>(`/invoices/${id}/print`, { method: "POST" }, token),
+  emailInvoice: (token: string, id: number, to_email: string) =>
+    request<{ id: number }>(
+      `/invoices/${id}/email`,
+      { method: "POST", body: JSON.stringify({ to_email }) },
+      token,
+    ),
+  reports: (token: string) => request<ReportsSummary>("/reports/summary", {}, token),
   activityLogs: (token: string) => request<ActivityLog[]>("/activity/logs?limit=20", {}, token),
   verifyLedger: (token: string) => request<LedgerVerification>("/activity/verify", {}, token),
 };
-

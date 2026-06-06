@@ -1,12 +1,26 @@
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import select
 
 from app.activity.service import append_activity_log, seal_activity_block
+from app.approvals.service import approve_request
 from app.common.enums import LifecycleStage, UserRole, VendorStatus
 from app.core.security import hash_password
 from app.db.session import SessionLocal
-from app.models.entities import Budget, User, Vendor
+from app.invoices.service import generate_invoice, mark_payable, queue_invoice_email
+from app.models.entities import RFQ, Budget, Quotation, RFQItem, User, Vendor
+from app.purchase_orders.service import (
+    confirm_receipt,
+    generate_purchase_order,
+    set_acceptance,
+    update_delivery,
+)
+from app.quotations.schemas import QuotationDraft
+from app.quotations.service import submit_quotation, upsert_quotation
+from app.rfqs.contracts import QuotationItemDraftContract, RFQItemCreate
+from app.rfqs.schemas import RFQCreate
+from app.rfqs.service import create_rfq, select_quotation_for_approval, send_rfq
 from app.vendors.service import seed_category
 
 DEMO_PASSWORD = "VendorBridge@123"
@@ -83,14 +97,14 @@ def seed() -> None:
             last_name="Shah",
             role=UserRole.procurement_officer,
         )
-        upsert_user(
+        manager = upsert_user(
             db,
             email="rahul.mehta@vendorbridge.test",
             first_name="Rahul",
             last_name="Mehta",
             role=UserRole.manager,
         )
-        upsert_user(
+        finance = upsert_user(
             db,
             email="priya.shah@vendorbridge.test",
             first_name="Priya",
@@ -110,7 +124,7 @@ def seed() -> None:
         it = seed_category(db, "IT Equipment", "IT")
         logistics = seed_category(db, "Logistics", "LOG")
 
-        upsert_vendor(
+        infra = upsert_vendor(
             db,
             actor=officer,
             category_id=furniture.id,
@@ -121,7 +135,7 @@ def seed() -> None:
             state="Gujarat",
             city="Surat",
             contact_name="Meera Patel",
-            contact_email="sales@infrasupplies.test",
+            contact_email="vendor@infrasupplies.test",
             contact_phone="+91 98765 10001",
             status=VendorStatus.active.value,
             lifecycle_stage=LifecycleStage.trusted.value,
@@ -135,7 +149,7 @@ def seed() -> None:
             is_pan_verified=True,
             compliance_notes="GST and PAN verified for demo.",
         )
-        upsert_vendor(
+        techcore = upsert_vendor(
             db,
             actor=officer,
             category_id=it.id,
@@ -160,7 +174,7 @@ def seed() -> None:
             is_pan_verified=True,
             compliance_notes=None,
         )
-        upsert_vendor(
+        officeneed = upsert_vendor(
             db,
             actor=officer,
             category_id=office.id,
@@ -219,6 +233,122 @@ def seed() -> None:
                     amount=Decimal("500000.00"),
                     spent_amount=Decimal("80000.00"),
                 )
+            )
+
+        if not db.scalar(select(RFQ).where(RFQ.title == "Office Furniture Procurement Q2")):
+            rfq = create_rfq(
+                db,
+                RFQCreate(
+                    title="Office Furniture Procurement Q2",
+                    category_id=furniture.id,
+                    description="Ergonomic chairs and standing desks for the Q2 office expansion.",
+                    deadline=datetime.now(UTC) + timedelta(days=14),
+                    vendor_ids=[infra.id, techcore.id, officeneed.id],
+                    items=[
+                        RFQItemCreate(
+                            item_name="Ergonomic chair",
+                            hsn_sac="9403",
+                            quantity=Decimal("25"),
+                            unit="NOS",
+                            target_price=Decimal("5000.00"),
+                        ),
+                        RFQItemCreate(
+                            item_name="Standing desk",
+                            hsn_sac="9403",
+                            quantity=Decimal("10"),
+                            unit="NOS",
+                            target_price=Decimal("9000.00"),
+                        ),
+                    ],
+                ),
+                officer,
+            )
+            send_rfq(db, rfq, officer)
+            item_ids = [
+                item.id
+                for item in db.scalars(
+                    select(RFQItem).where(RFQItem.rfq_id == rfq.id).order_by(RFQItem.id)
+                ).all()
+            ]
+            quote_payloads = [
+                (
+                    infra,
+                    10,
+                    30,
+                    Decimal("4200.00"),
+                    Decimal("5200.00"),
+                    "Can deliver full quantity from Surat warehouse.",
+                ),
+                (
+                    techcore,
+                    7,
+                    15,
+                    Decimal("4700.00"),
+                    Decimal("6300.00"),
+                    "Fast delivery, shorter payment terms.",
+                ),
+                (
+                    officeneed,
+                    14,
+                    30,
+                    Decimal("4550.00"),
+                    Decimal("5650.00"),
+                    "15 chairs now, remaining batch in one week.",
+                ),
+            ]
+            quotations: list[Quotation] = []
+            for vendor, delivery_days, terms, chair_price, desk_price, notes in quote_payloads:
+                quotation = upsert_quotation(
+                    db,
+                    QuotationDraft(
+                        rfq_id=rfq.id,
+                        vendor_id=vendor.id,
+                        delivery_days=delivery_days,
+                        payment_terms_days=terms,
+                        notes=notes,
+                        items=[
+                            QuotationItemDraftContract(
+                                rfq_item_id=item_ids[0],
+                                quantity=Decimal("25"),
+                                unit_price=chair_price,
+                                gst_percent=Decimal("18.00"),
+                                available_quantity=Decimal("25")
+                                if vendor != officeneed
+                                else Decimal("15"),
+                                additional_quantity=Decimal("0")
+                                if vendor != officeneed
+                                else Decimal("10"),
+                                additional_available_days=None if vendor != officeneed else 7,
+                            ),
+                            QuotationItemDraftContract(
+                                rfq_item_id=item_ids[1],
+                                quantity=Decimal("10"),
+                                unit_price=desk_price,
+                                gst_percent=Decimal("18.00"),
+                                available_quantity=Decimal("10"),
+                                additional_quantity=Decimal("0"),
+                            ),
+                        ],
+                    ),
+                    officer,
+                )
+                quotations.append(submit_quotation(db, quotation, officer))
+            approval = select_quotation_for_approval(db, rfq, quotations[0].id, officer)
+            approve_request(db, approval, manager, "Approved based on best value and budget fit.")
+            approve_request(db, approval, finance, "Finance reviewed and approved.")
+            po = generate_purchase_order(db, approval, officer)
+            set_acceptance(db, po, officer, "accepted", "Vendor accepted PO terms.")
+            update_delivery(db, po, officer, "shipped")
+            update_delivery(db, po, officer, "in_transit")
+            confirm_receipt(db, po, officer)
+            invoice = generate_invoice(db, po, officer)
+            mark_payable(db, invoice, finance)
+            queue_invoice_email(
+                db,
+                invoice,
+                officer,
+                "accounts@infrasupplies.test",
+                "Invoice queued from VendorBridge demo outbox.",
             )
 
         seal_activity_block(db)
