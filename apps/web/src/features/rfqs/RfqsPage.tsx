@@ -1,10 +1,13 @@
 import { Send, Sparkles } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { StatusBadge } from "../../components/Badge";
+import { useAuth } from "../auth/AuthContext";
 import { api, ApiError, type RFQPayload } from "../../lib/api";
 import type { RFQListItem, Vendor, VendorCategory } from "../../lib/types";
 
 export function RfqsPage({ token }: { token: string }) {
+  const { user } = useAuth();
+  const isOfficer = user?.role === "procurement_officer";
   const [rfqs, setRfqs] = useState<RFQListItem[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [categories, setCategories] = useState<VendorCategory[]>([]);
@@ -85,59 +88,68 @@ export function RfqsPage({ token }: { token: string }) {
 
   return (
     <div className="space-y-5">
-      <section className="panel p-4">
-        <div className="mb-4 flex items-center gap-2">
-          <Sparkles size={20} className="text-brand" />
-          <h2 className="text-lg font-semibold">Create RFQ</h2>
-        </div>
-        {error && <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div>}
-        {notice && <div className="mb-3 rounded-md bg-teal-50 p-3 text-sm text-success">{notice}</div>}
-        <form onSubmit={createRfq} className="grid gap-3 lg:grid-cols-4">
-          <label className="space-y-1 lg:col-span-2">
-            <span className="label">Title</span>
-            <input className="field" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
-          </label>
-          <label className="space-y-1">
-            <span className="label">Category</span>
-            <select className="field" value={form.category_id} onChange={(event) => setForm({ ...form, category_id: Number(event.target.value) })}>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>{category.name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="space-y-1">
-            <span className="label">Deadline</span>
-            <input className="field" type="datetime-local" value={form.deadline} onChange={(event) => setForm({ ...form, deadline: event.target.value })} />
-          </label>
-          <label className="space-y-1 lg:col-span-4">
-            <span className="label">Description</span>
-            <input className="field" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
-          </label>
-          <div className="lg:col-span-4">
-            <p className="label mb-2">Assigned vendors</p>
-            <div className="grid gap-2 md:grid-cols-3">
-              {vendors.map((vendor) => (
-                <label key={vendor.id} className="flex items-center gap-2 rounded-md border border-line bg-white p-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={form.vendor_ids.includes(vendor.id)}
-                    onChange={(event) => {
-                      const vendor_ids = event.target.checked
-                        ? [...form.vendor_ids, vendor.id]
-                        : form.vendor_ids.filter((id) => id !== vendor.id);
-                      setForm({ ...form, vendor_ids });
-                    }}
-                  />
-                  {vendor.name}
-                </label>
-              ))}
-            </div>
+      {isOfficer && (
+        <section className="panel p-4">
+          <div className="mb-4 flex items-center gap-2">
+            <Sparkles size={20} className="text-brand" />
+            <h2 className="text-lg font-semibold">Create RFQ</h2>
           </div>
-          <button className="btn-primary lg:col-span-1" disabled={busy || !form.category_id || form.vendor_ids.length === 0}>
-            Create RFQ
-          </button>
-        </form>
-      </section>
+          {error && <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div>}
+          {notice && <div className="mb-3 rounded-md bg-teal-50 p-3 text-sm text-success">{notice}</div>}
+          <form onSubmit={createRfq} className="grid gap-3 lg:grid-cols-4">
+            <label className="space-y-1 lg:col-span-2">
+              <span className="label">Title</span>
+              <input className="field" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} />
+            </label>
+            <label className="space-y-1">
+              <span className="label">Category</span>
+              <select className="field" value={form.category_id} onChange={(event) => setForm({ ...form, category_id: Number(event.target.value) })}>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="label">Deadline</span>
+              <input className="field" type="datetime-local" value={form.deadline} onChange={(event) => setForm({ ...form, deadline: event.target.value })} />
+            </label>
+            <label className="space-y-1 lg:col-span-4">
+              <span className="label">Description</span>
+              <input className="field" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
+            </label>
+            <div className="lg:col-span-4">
+              <p className="label mb-2">Assigned vendors</p>
+              <div className="grid gap-2 md:grid-cols-3">
+                {vendors.map((vendor) => (
+                  <label key={vendor.id} className="flex items-center gap-2 rounded-md border border-line bg-white p-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.vendor_ids.includes(vendor.id)}
+                      onChange={(event) => {
+                        const vendor_ids = event.target.checked
+                          ? [...form.vendor_ids, vendor.id]
+                          : form.vendor_ids.filter((id) => id !== vendor.id);
+                        setForm({ ...form, vendor_ids });
+                      }}
+                    />
+                    {vendor.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <button className="btn-primary lg:col-span-1" disabled={busy || !form.category_id || form.vendor_ids.length === 0}>
+              Create RFQ
+            </button>
+          </form>
+        </section>
+      )}
+
+      {!isOfficer && (error || notice) && (
+        <div>
+          {error && <div className="rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div>}
+          {notice && <div className="rounded-md bg-teal-50 p-3 text-sm text-success">{notice}</div>}
+        </div>
+      )}
 
       <section className="panel overflow-hidden">
         <table className="w-full min-w-[760px] text-left text-sm">
@@ -148,7 +160,7 @@ export function RfqsPage({ token }: { token: string }) {
               <th className="px-4 py-3">Deadline</th>
               <th className="px-4 py-3">Quotes</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Action</th>
+              {isOfficer && <th className="px-4 py-3 text-right">Action</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -159,13 +171,15 @@ export function RfqsPage({ token }: { token: string }) {
                 <td className="px-4 py-3">{new Date(rfq.deadline).toLocaleDateString()}</td>
                 <td className="px-4 py-3">{rfq.quote_count} / {rfq.invite_count}</td>
                 <td className="px-4 py-3"><StatusBadge status={rfq.status === "draft" ? "pending" : "active"} /></td>
-                <td className="px-4 py-3 text-right">
-                  {rfq.status === "draft" && (
-                    <button className="btn-primary h-9" disabled={busy} onClick={() => send(rfq.id)}>
-                      <Send size={16} /> Send
-                    </button>
-                  )}
-                </td>
+                {isOfficer && (
+                  <td className="px-4 py-3 text-right">
+                    {rfq.status === "draft" && (
+                      <button className="btn-primary h-9" disabled={busy} onClick={() => send(rfq.id)}>
+                        <Send size={16} /> Send
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

@@ -1,9 +1,14 @@
 import { Download, Mail, Printer, ReceiptIndianRupee } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useAuth } from "../auth/AuthContext";
 import { api, ApiError } from "../../lib/api";
 import type { InvoiceListItem, PurchaseOrderListItem } from "../../lib/types";
 
 export function InvoicesPage({ token }: { token: string }) {
+  const { user } = useAuth();
+  const isVendor = user?.role === "vendor";
+  const canGenerateInvoice = !isVendor;
+  const canMarkPayable = !isVendor;
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [orders, setOrders] = useState<PurchaseOrderListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -53,15 +58,17 @@ export function InvoicesPage({ token }: { token: string }) {
     <div className="space-y-4">
       {error && <div className="rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div>}
       {notice && <div className="rounded-md bg-teal-50 p-3 text-sm text-success">{notice}</div>}
-      <section className="panel p-4">
-        <div className="flex flex-wrap gap-2">
-          {orders.map((po) => (
-            <button key={po.id} className="btn-secondary" disabled={busy} onClick={() => act("Invoice generated", () => api.generateInvoice(token, po.id))}>
-              <ReceiptIndianRupee size={18} /> Generate for {po.po_number}
-            </button>
-          ))}
-        </div>
-      </section>
+      {canGenerateInvoice && orders.length > 0 && (
+        <section className="panel p-4">
+          <div className="flex flex-wrap gap-2">
+            {orders.map((po) => (
+              <button key={po.id} className="btn-secondary" disabled={busy} onClick={() => act("Invoice generated", () => api.generateInvoice(token, po.id))}>
+                <ReceiptIndianRupee size={18} /> Generate for {po.po_number}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
       <section className="panel overflow-hidden">
         <table className="w-full min-w-[940px] text-left text-sm">
           <thead className="border-b border-line bg-field text-xs uppercase text-slate-600">
@@ -81,7 +88,9 @@ export function InvoicesPage({ token }: { token: string }) {
                     <button className="btn-secondary h-9 w-9 px-0" title="Print" onClick={() => act("Print logged", () => api.printInvoice(token, invoice.id))}><Printer size={16} /></button>
                     <button className="btn-secondary h-9 w-9 px-0" title="Download" onClick={() => act("Download logged", () => downloadInvoice(invoice.id))}><Download size={16} /></button>
                     <button className="btn-secondary h-9 w-9 px-0" title="Email" onClick={() => act("Email queued", () => api.emailInvoice(token, invoice.id, "accounts@infrasupplies.com"))}><Mail size={16} /></button>
-                    <button className="btn-primary h-9" disabled={busy || invoice.status === "payable"} onClick={() => act("Marked payable", () => api.markPayable(token, invoice.id))}>Payable</button>
+                    {canMarkPayable && (
+                      <button className="btn-primary h-9" disabled={busy || invoice.status === "payable"} onClick={() => act("Marked payable", () => api.markPayable(token, invoice.id))}>Payable</button>
+                    )}
                   </div>
                 </td>
               </tr>

@@ -1,10 +1,14 @@
 import { CheckCircle2, Gauge, Send } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { StageBadge } from "../../components/Badge";
+import { useAuth } from "../auth/AuthContext";
 import { api, ApiError } from "../../lib/api";
 import type { ComparisonResponse, QuotationListItem, RFQ, RFQListItem, Vendor } from "../../lib/types";
 
 export function QuotationsPage({ token }: { token: string }) {
+  const { user } = useAuth();
+  const isVendor = user?.role === "vendor";
+  const isOfficer = user?.role === "procurement_officer";
   const [rfqs, setRfqs] = useState<RFQListItem[]>([]);
   const [rfqDetail, setRfqDetail] = useState<RFQ | null>(null);
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -111,28 +115,30 @@ export function QuotationsPage({ token }: { token: string }) {
       {error && <div className="rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div>}
       {notice && <div className="rounded-md bg-teal-50 p-3 text-sm text-success">{notice}</div>}
 
-      <section className="panel p-4">
-        <div className="grid gap-3 md:grid-cols-3">
-          <label className="space-y-1">
-            <span className="label">RFQ</span>
-            <select className="field" value={selectedRfqId} onChange={(event) => setSelectedRfqId(Number(event.target.value))}>
-              <option value={0}>Select RFQ</option>
-              {rfqs.map((rfq) => <option key={rfq.id} value={rfq.id}>{rfq.title}</option>)}
-            </select>
-          </label>
-          <form onSubmit={submitQuote} className="contents">
+      {isVendor && (
+        <section className="panel p-4">
+          <div className="grid gap-3 md:grid-cols-3">
             <label className="space-y-1">
-              <span className="label">Vendor</span>
-              <select className="field" value={vendorId} onChange={(event) => setVendorId(Number(event.target.value))}>
-                {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
+              <span className="label">RFQ</span>
+              <select className="field" value={selectedRfqId} onChange={(event) => setSelectedRfqId(Number(event.target.value))}>
+                <option value={0}>Select RFQ</option>
+                {rfqs.map((rfq) => <option key={rfq.id} value={rfq.id}>{rfq.title}</option>)}
               </select>
             </label>
-            <button className="btn-primary self-end" disabled={busy || !rfqDetail || !vendorId}>
-              <Send size={18} /> Submit Demo Quote
-            </button>
-          </form>
-        </div>
-      </section>
+            <form onSubmit={submitQuote} className="contents">
+              <label className="space-y-1">
+                <span className="label">Vendor</span>
+                <select className="field" value={vendorId} onChange={(event) => setVendorId(Number(event.target.value))}>
+                  {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
+                </select>
+              </label>
+              <button className="btn-primary self-end" disabled={busy || !rfqDetail || !vendorId}>
+                <Send size={18} /> Submit Quotation
+              </button>
+            </form>
+          </div>
+        </section>
+      )}
 
       <section className="panel overflow-hidden">
         <div className="border-b border-line p-4">
@@ -152,7 +158,7 @@ export function QuotationsPage({ token }: { token: string }) {
                 <th className="px-4 py-3">Lifecycle</th>
                 <th className="px-4 py-3">Coverage</th>
                 <th className="px-4 py-3">Best Value</th>
-                <th className="px-4 py-3 text-right">Action</th>
+                {isOfficer && <th className="px-4 py-3 text-right">Action</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -175,11 +181,13 @@ export function QuotationsPage({ token }: { token: string }) {
                       <span className="font-semibold">{Number(row.best_value_score).toFixed(2)}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <button className="btn-primary h-9" disabled={busy} onClick={() => selectQuote(row.quotation_id)}>
-                      <CheckCircle2 size={16} /> Select
-                    </button>
-                  </td>
+                  {isOfficer && (
+                    <td className="px-4 py-3 text-right">
+                      <button className="btn-primary h-9" disabled={busy} onClick={() => selectQuote(row.quotation_id)}>
+                        <CheckCircle2 size={16} /> Select
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
               {!comparison?.rows.length && (

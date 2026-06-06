@@ -12,11 +12,29 @@ import { ReportsPage } from "./features/reports/ReportsPage";
 import { RfqsPage } from "./features/rfqs/RfqsPage";
 import { VendorsPage } from "./features/vendors/VendorsPage";
 import { api } from "./lib/api";
+import type { UserRole } from "./lib/types";
+
+const ROLE_ALLOWED_VIEWS: Record<UserRole, ViewKey[]> = {
+  admin: ["dashboard", "vendors", "rfqs", "approvals", "reports", "activity"],
+  procurement_officer: ["dashboard", "vendors", "rfqs", "quotations", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
+  manager: ["dashboard", "rfqs", "quotations", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
+  finance_manager: ["dashboard", "approvals", "purchaseOrders", "invoices", "reports", "activity"],
+  vendor: ["dashboard", "rfqs", "quotations", "purchaseOrders", "invoices", "activity"],
+};
 
 export function App() {
   const { token, user, loading } = useAuth();
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
   const [pendingApprovals, setPendingApprovals] = useState<number>(0);
+
+  const role = (user?.role ?? "vendor") as UserRole;
+  const allowedViews = ROLE_ALLOWED_VIEWS[role] ?? ROLE_ALLOWED_VIEWS.vendor;
+
+  function handleViewChange(view: ViewKey) {
+    if (allowedViews.includes(view)) {
+      setActiveView(view);
+    }
+  }
 
   // Load pending approvals count for badge
   useEffect(() => {
@@ -41,17 +59,19 @@ export function App() {
     return <AuthPage />;
   }
 
+  const safeView = allowedViews.includes(activeView) ? activeView : "dashboard";
+
   return (
-    <Layout activeView={activeView} onViewChange={setActiveView} pendingApprovals={pendingApprovals}>
-      {activeView === "dashboard" && <Dashboard token={token} />}
-      {activeView === "vendors" && <VendorsPage token={token} />}
-      {activeView === "rfqs" && <RfqsPage token={token} />}
-      {activeView === "quotations" && <QuotationsPage token={token} />}
-      {activeView === "approvals" && <ApprovalsPage token={token} />}
-      {activeView === "purchaseOrders" && <PurchaseOrdersPage token={token} />}
-      {activeView === "invoices" && <InvoicesPage token={token} />}
-      {activeView === "reports" && <ReportsPage token={token} />}
-      {activeView === "activity" && <ActivityPage token={token} />}
+    <Layout activeView={safeView} onViewChange={handleViewChange} pendingApprovals={pendingApprovals}>
+      {safeView === "dashboard" && <Dashboard token={token} />}
+      {safeView === "vendors" && <VendorsPage token={token} />}
+      {safeView === "rfqs" && <RfqsPage token={token} />}
+      {safeView === "quotations" && <QuotationsPage token={token} />}
+      {safeView === "approvals" && <ApprovalsPage token={token} />}
+      {safeView === "purchaseOrders" && <PurchaseOrdersPage token={token} />}
+      {safeView === "invoices" && <InvoicesPage token={token} />}
+      {safeView === "reports" && <ReportsPage token={token} />}
+      {safeView === "activity" && <ActivityPage token={token} />}
     </Layout>
   );
 }

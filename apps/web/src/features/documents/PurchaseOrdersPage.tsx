@@ -1,5 +1,6 @@
 import { CheckCircle2, MessageCircleWarning, PackageCheck, Truck, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useAuth } from "../auth/AuthContext";
 import { api, ApiError } from "../../lib/api";
 import type { PurchaseOrderListItem } from "../../lib/types";
 
@@ -11,6 +12,13 @@ const nextDelivery: Record<string, string> = {
 };
 
 export function PurchaseOrdersPage({ token }: { token: string }) {
+  const { user } = useAuth();
+  const isVendor = user?.role === "vendor";
+  const isOfficer = user?.role === "procurement_officer";
+  const isManager = user?.role === "manager" || user?.role === "finance_manager";
+  const canAcceptReject = isVendor;
+  const canUpdateDelivery = isVendor || isOfficer;
+  const canReceive = isOfficer || isManager;
   const [orders, setOrders] = useState<PurchaseOrderListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -58,11 +66,19 @@ export function PurchaseOrdersPage({ token }: { token: string }) {
                 <td className="px-4 py-3">{po.delivery_status}</td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
-                    <button className="btn-secondary h-9" disabled={busy || po.acceptance_status === "accepted"} onClick={() => act("PO accepted", () => api.acceptPo(token, po.id))}><CheckCircle2 size={16} /> Accept</button>
-                    <button className="btn-secondary h-9" disabled={busy || po.acceptance_status === "rejected"} onClick={() => act("PO rejected", () => api.rejectPo(token, po.id))}><XCircle size={16} /> Reject</button>
-                    <button className="btn-secondary h-9" disabled={busy || po.acceptance_status === "modification_requested"} onClick={() => act("Modification requested", () => api.requestPoModification(token, po.id))}><MessageCircleWarning size={16} /> Changes</button>
-                    <button className="btn-secondary h-9" disabled={busy || po.delivery_status === "delivered"} onClick={() => act("Delivery updated", () => api.updateDelivery(token, po.id, nextDelivery[po.delivery_status] ?? "delivered"))}><Truck size={16} /> Move</button>
-                    <button className="btn-primary h-9" disabled={busy || po.status === "received"} onClick={() => act("Receipt confirmed", () => api.receivePo(token, po.id))}><PackageCheck size={16} /> Receive</button>
+                    {canAcceptReject && (
+                      <>
+                        <button className="btn-secondary h-9" disabled={busy || po.acceptance_status === "accepted"} onClick={() => act("PO accepted", () => api.acceptPo(token, po.id))}><CheckCircle2 size={16} /> Accept</button>
+                        <button className="btn-secondary h-9" disabled={busy || po.acceptance_status === "rejected"} onClick={() => act("PO rejected", () => api.rejectPo(token, po.id))}><XCircle size={16} /> Reject</button>
+                        <button className="btn-secondary h-9" disabled={busy || po.acceptance_status === "modification_requested"} onClick={() => act("Modification requested", () => api.requestPoModification(token, po.id))}><MessageCircleWarning size={16} /> Changes</button>
+                      </>
+                    )}
+                    {canUpdateDelivery && (
+                      <button className="btn-secondary h-9" disabled={busy || po.delivery_status === "delivered"} onClick={() => act("Delivery updated", () => api.updateDelivery(token, po.id, nextDelivery[po.delivery_status] ?? "delivered"))}><Truck size={16} /> Move</button>
+                    )}
+                    {canReceive && (
+                      <button className="btn-primary h-9" disabled={busy || po.status === "received"} onClick={() => act("Receipt confirmed", () => api.receivePo(token, po.id))}><PackageCheck size={16} /> Receive</button>
+                    )}
                   </div>
                 </td>
               </tr>
