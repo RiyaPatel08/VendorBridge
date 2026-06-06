@@ -7,9 +7,13 @@ const initialStats: DashboardStats = {
   vendors: 0,
   active_vendors: 0,
   rfqs: 0,
+  active_rfqs: 0,
+  pending_approvals: 0,
   purchase_orders: 0,
   invoices: 0,
   ledger_entries: 0,
+  recent_purchase_orders: [],
+  recent_invoices: [],
 };
 
 export function Dashboard({ token }: { token: string }) {
@@ -26,7 +30,8 @@ export function Dashboard({ token }: { token: string }) {
   const cards = [
     { label: "Active Vendors", value: stats.active_vendors, icon: Store, accent: "text-success" },
     { label: "Total Vendors", value: stats.vendors, icon: CheckCircle2, accent: "text-brand" },
-    { label: "RFQs", value: stats.rfqs, icon: Workflow, accent: "text-blue-700" },
+    { label: "Active RFQs", value: stats.active_rfqs, icon: Workflow, accent: "text-blue-700" },
+    { label: "Pending Approvals", value: stats.pending_approvals, icon: FileStack, accent: "text-danger" },
     { label: "Ledger Entries", value: stats.ledger_entries, icon: Activity, accent: "text-warn" },
   ];
 
@@ -34,7 +39,7 @@ export function Dashboard({ token }: { token: string }) {
     <div className="space-y-5">
       {error && <div className="rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div>}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map((card) => (
           <div key={card.label} className="panel p-4">
             <div className="flex items-center justify-between gap-3">
@@ -46,6 +51,40 @@ export function Dashboard({ token }: { token: string }) {
             </div>
           </div>
         ))}
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <div className="panel p-4">
+          <h2 className="mb-4 font-semibold">Recent POs</h2>
+          <div className="space-y-3">
+            {stats.recent_purchase_orders.map((po) => (
+              <div key={po.id} className="flex items-center justify-between gap-4 rounded-md border border-line p-3">
+                <div>
+                  <p className="font-semibold">{po.po_number}</p>
+                  <p className="text-sm text-slate-600">{po.vendor_name} | {po.delivery_status}</p>
+                </div>
+                <p className="text-sm font-semibold">INR {po.grand_total.toLocaleString("en-IN")}</p>
+              </div>
+            ))}
+            {!stats.recent_purchase_orders.length && <p className="rounded-md border border-line p-4 text-sm text-slate-500">No purchase orders yet.</p>}
+          </div>
+        </div>
+
+        <div className="panel p-4">
+          <h2 className="mb-4 font-semibold">Recent Invoices</h2>
+          <div className="space-y-3">
+            {stats.recent_invoices.map((invoice) => (
+              <div key={invoice.id} className="flex items-center justify-between gap-4 rounded-md border border-line p-3">
+                <div>
+                  <p className="font-semibold">{invoice.invoice_number}</p>
+                  <p className="text-sm text-slate-600">{invoice.vendor_name} | {invoice.match_status}</p>
+                </div>
+                <p className="text-sm font-semibold">INR {invoice.grand_total.toLocaleString("en-IN")}</p>
+              </div>
+            ))}
+            {!stats.recent_invoices.length && <p className="rounded-md border border-line p-4 text-sm text-slate-500">No invoices yet.</p>}
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
