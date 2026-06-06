@@ -1,0 +1,116 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); color: var(--color-text-primary); }
+.report { padding: 16px 0; max-width: 760px; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-text-secondary); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dot.covered { background: #1D9E75; }
+.dot.partial { background: #BA7517; }
+.dot.missing { background: #E24B4A; }
+.section { margin-bottom: 20px; }
+.section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--color-border-tertiary); }
+.row { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--color-border-tertiary); }
+.row:last-child { border-bottom: none; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.row-content { flex: 1; }
+.row-label { font-size: 13px; font-weight: 500; line-height: 1.4; }
+.row-note { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; line-height: 1.4; }
+.tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 99px; font-weight: 500; margin-right: 4px; margin-top: 3px; }
+.tag.p { background: #E1F5EE; color: #0F6E56; }
+.tag.t { background: #E1F5EE; color: #0F6E56; }
+.tag-both { background: #E1F5EE; color: #0F6E56; }
+.tag-plan { background: #E6F1FB; color: #185FA5; }
+.tag-task { background: #EEEDFE; color: #534AB7; }
+.summary-bar { display: flex; border-radius: 8px; overflow: hidden; height: 12px; margin-bottom: 6px; }
+.sb-covered { background: #1D9E75; }
+.sb-partial  { background: #BA7517; }
+.sb-missing  { background: #E24B4A; }
+.summary-labels { display: flex; gap: 16px; font-size: 12px; color: var(--color-text-secondary); margin-bottom: 20px; }
+.sl-val { font-weight: 500; }
+@media (prefers-color-scheme: dark) {
+  .tag.p, .tag.t, .tag-both { background: #085041; color: #9FE1CB; }
+  .tag-plan { background: #0C447C; color: #B5D4F4; }
+  .tag-task { background: #3C3489; color: #CECBF6; }
+  .dot.covered, .status-dot.covered { background: #1D9E75; }
+  .dot.partial, .status-dot.partial { background: #EF9F27; }
+  .dot.missing, .status-dot.missing { background: #E24B4A; }
+}
+</style>
+<div class="report">
+  <div class="legend">
+    <div class="legend-item"><div class="dot covered"></div> Covered in both markdowns</div>
+    <div class="legend-item"><div class="dot partial"></div> Partially covered</div>
+    <div class="legend-item"><div class="dot missing"></div> Missing from both markdowns</div>
+  </div>
+  <div class="summary-bar">
+    <div class="sb-covered" style="width:46%"></div>
+    <div class="sb-partial" style="width:16%"></div>
+    <div class="sb-missing" style="width:38%"></div>
+  </div>
+  <div class="summary-labels">
+    <span><span class="sl-val" style="color:#1D9E75">12 covered</span></span>
+    <span><span class="sl-val" style="color:#BA7517">4 partial</span></span>
+    <span><span class="sl-val" style="color:#E24B4A">10 missing</span></span>
+    <span>across 26 PDF concept areas</span>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Problem statement</div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Difficulty identifying reliable vendors</div><div class="row-note">Covered via Best Value Score and multi-factor quotation comparison.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Lack of visibility into vendor performance</div><div class="row-note">Covered via vendor ratings, reports, and analytics pages.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">New vendors struggle to gain opportunities</div><div class="row-note">PDF introduces a Vendor Discovery Engine that fairly distributes RFQs to new vendors. Neither markdown mentions this concept.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Decisions based only on price</div><div class="row-note">Addressed by Best Value Score (multi-factor weighted scoring).</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Partial inventory availability creates delays</div><div class="row-note">PDF treats partial fulfillment as a core feature. Not mentioned in either markdown.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">No intelligent recommendations</div><div class="row-note">Best Value Score with explainable breakdown covers this.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Limited procurement analytics</div><div class="row-note">Reports page with KPIs, spend summaries, and monthly trends is well-defined.</div></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Vision &amp; platform components</div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Procurement ERP</div><div class="row-note">Core positioning in both markdowns.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Vendor Marketplace</div><div class="row-note">PDF frames VendorBridge as a marketplace. Neither markdown uses or plans this concept.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Vendor Reputation System</div><div class="row-note">The 5-stage lifecycle (Potential → Preferred) is a core PDF differentiator. Absent from both markdowns.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Procurement Intelligence Engine</div><div class="row-note">Best Value Score + comparison engine covers this.</div></div></div>
+    <div class="row"><div class="status-dot partial"></div><div class="row-content"><div class="row-label">Risk Assessment Framework</div><div class="row-note">PDF defines explicit Low / Medium / High risk categories for manager review. Markdowns have policy reason badges and approval thresholds but not a named risk engine with those categories.</div></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Vendor lifecycle (5 stages — entirely missing)</div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Stage 1: Potential Vendor</div><div class="row-note">Newly registered, no order history. Not in markdowns — markdowns use pending/active/blocked status, which is a different concept.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Stage 2: Emerging Vendor (1–5 orders)</div><div class="row-note">Not in markdowns.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Stage 3: Verified Vendor (5–20 orders)</div><div class="row-note">Not in markdowns.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Stage 4: Trusted Vendor (20+ orders)</div><div class="row-note">Not in markdowns.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Stage 5: Preferred Vendor (100+ orders)</div><div class="row-note">Not in markdowns.</div></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">End-to-end procurement flow (Steps 1–15)</div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Step 1: Vendor registration</div><div class="row-note">Company, GST, PAN, bank, categories, verification — all covered. The "Potential Vendor" status granted on registration is missing (lifecycle issue).</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Step 2: Procurement requirement / RFQ creation</div><div class="row-note">Fully covered in both markdowns.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Step 3: Vendor Discovery Engine</div><div class="row-note">PDF: system auto-selects a mix of lifecycle stages (e.g. 3 established + 2 new) for fair distribution. Neither markdown covers this automatic discovery logic.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Step 4: Vendor Inventory Declaration (partial qty)</div><div class="row-note">PDF: vendor can say "I have 15 now, 5 more in 7 days." Neither markdown models partial quantity or future-availability fields in quotations.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Step 5: Quotation submission</div><div class="row-note">Unit price, delivery timeline, warranty, notes — covered well.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Step 6: Intelligent quotation comparison</div><div class="row-note">Best Value Score with price, delivery, rating, compliance, payment terms — fully covered.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Step 7: Split Procurement Engine</div><div class="row-note">PDF: if no single vendor can fulfill, recommend splitting across vendors. Neither markdown mentions split procurement or split PO generation (PO-001A / PO-001B).</div></div></div>
+    <div class="row"><div class="status-dot partial"></div><div class="row-content"><div class="row-label">Step 8: Procurement Risk Analysis</div><div class="row-note">Policy reason badges in markdowns partially map to this. But PDF defines explicit Low/Medium/High risk categories and 5 risk dimensions. Not structured the same way.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Step 9: Approval workflow</div><div class="row-note">Fully covered — approve/reject, remarks, L1/L2 tiers, budget impact.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Step 10: PO generation</div><div class="row-note">Covered. Split PO notation (001A/001B) is not covered since split procurement is absent.</div></div></div>
+    <div class="row"><div class="status-dot partial"></div><div class="row-content"><div class="row-label">Step 11: Vendor acceptance of PO</div><div class="row-note">PLANNING.md PO status includes "accepted" but the full vendor action flow (Accept / Reject / Request Modification) is not modelled as a workflow.</div></div></div>
+    <div class="row"><div class="status-dot partial"></div><div class="row-content"><div class="row-label">Step 12: Delivery tracking</div><div class="row-note">PDF defines: Packed → Shipped → In Transit → Delivered. PLANNING.md PO statuses (draft, generated, sent, accepted, received) don't map directly. "In transit" granularity is missing.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Step 13: Invoice generation</div><div class="row-note">GST, PO reference, totals, download/print/email — fully covered.</div></div></div>
+    <div class="row"><div class="status-dot partial"></div><div class="row-content"><div class="row-label">Step 14: Vendor performance evaluation</div><div class="row-note">PDF defines 4 rating criteria: Product Quality, Delivery Speed, Communication, Service Experience. Markdowns only have a single vendor rating score — no breakdown.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Step 15: Vendor reputation building</div><div class="row-note">PDF: ratings feed into Reliability Score, Delivery Score, Completion Rate, Customer Satisfaction, and vendor progresses through maturity levels. Neither markdown covers this feedback loop.</div></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Unique features (from PDF)</div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Vendor Growth Lifecycle</div><div class="row-note">Completely absent from both markdowns.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Partial Fulfillment Support</div><div class="row-note">Not modelled in the quotation schema or any markdown task.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Split Procurement Engine</div><div class="row-note">Not modelled anywhere in the markdowns.</div></div></div>
+    <div class="row"><div class="status-dot partial"></div><div class="row-content"><div class="row-label">Risk Assessment Engine</div><div class="row-note">Policy reasons and approval thresholds exist but formal risk tiers (Low/Medium/High) are not defined.</div></div></div>
+    <div class="row"><div class="status-dot missing"></div><div class="row-content"><div class="row-label">Vendor Discovery Framework</div><div class="row-note">Fair inclusion of new vendors in RFQ distribution — not in either markdown.</div></div></div>
+    <div class="row"><div class="status-dot covered"></div><div class="row-content"><div class="row-label">Procurement Intelligence</div><div class="row-note">Best Value Score with explainable components covers this well.</div></div></div>
+  </div>
+</div>

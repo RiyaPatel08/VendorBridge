@@ -1,0 +1,210 @@
+
+<h2 class="sr-only">VendorBridge product proposal for Team BuzzBeatStrong, covering differentiators, tech stack, build plan, and Odoo GitHub repos.</h2>
+
+<style>
+:root { --p: #1B3A6B; --a: #00C48C; --o: #F97316; --bg: var(--color-background-primary); --s: var(--color-background-secondary); --t: var(--color-text-primary); --m: var(--color-text-secondary); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body, div { font-family: var(--font-sans); }
+.hdr { background: var(--p); color: #fff; padding: 2rem 1.5rem 1.5rem; border-radius: var(--border-radius-lg); margin-bottom: 1.5rem; }
+.hdr h1 { font-size: 28px; font-weight: 500; letter-spacing: -0.5px; margin-bottom: 4px; }
+.hdr p { font-size: 13px; opacity: 0.75; }
+.badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 999px; margin-right: 6px; margin-top: 10px; }
+.b-g { background: #0A4A30; color: #7EF0C2; }
+.b-o { background: #7A3A0A; color: #FDBA74; }
+.b-b { background: #0C337A; color: #93C5FD; }
+.sec { margin-bottom: 1.5rem; }
+.sec-title { font-size: 11px; font-weight: 500; color: var(--a); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.75rem; padding-bottom: 6px; border-bottom: 1.5px solid var(--a); }
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+.kpi { background: var(--s); border-radius: var(--border-radius-md); padding: 0.875rem 1rem; }
+.kpi-n { font-size: 22px; font-weight: 500; color: var(--a); }
+.kpi-l { font-size: 11px; color: var(--m); margin-top: 2px; }
+.diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.diff-card { background: var(--s); border-radius: var(--border-radius-md); padding: 0.875rem 1rem; border-left: 3px solid var(--a); }
+.diff-card.orange { border-left-color: var(--o); }
+.diff-card.blue { border-left-color: #3B82F6; }
+.diff-card.pink { border-left-color: #EC4899; }
+.diff-card.teal { border-left-color: var(--a); }
+.diff-num { font-size: 12px; font-weight: 500; color: var(--a); margin-bottom: 4px; }
+.diff-num.o { color: var(--o); }
+.diff-num.b { color: #3B82F6; }
+.diff-num.p { color: #EC4899; }
+.diff-title { font-size: 13px; font-weight: 500; color: var(--t); margin-bottom: 3px; }
+.diff-desc { font-size: 12px; color: var(--m); line-height: 1.5; }
+.flow-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0; margin-bottom: 0.5rem; }
+.flow-box { background: var(--s); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 6px 12px; font-size: 12px; font-weight: 500; color: var(--t); white-space: nowrap; }
+.flow-arr { color: var(--a); font-size: 16px; margin: 0 4px; }
+.flow-note { font-size: 11px; color: var(--m); margin-left: 8px; background: var(--color-background-success); color: var(--color-text-success); padding: 2px 8px; border-radius: 999px; }
+.repo-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.repo-row:last-child { border-bottom: none; }
+.repo-name { font-size: 12px; font-weight: 500; color: #3B82F6; font-family: var(--font-mono); min-width: 120px; }
+.repo-tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 500; margin-right: 4px; }
+.tag-h { background: #0A3A1A; color: #6EE7B7; }
+.tag-m { background: #3A2A00; color: #FCD34D; }
+.repo-desc { font-size: 12px; color: var(--m); flex: 1; line-height: 1.5; }
+.plan-row { display: grid; grid-template-columns: 56px 80px 1fr; gap: 10px; align-items: start; padding: 7px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.plan-row:last-child { border-bottom: none; }
+.plan-h { font-size: 12px; font-weight: 500; color: var(--a); }
+.plan-phase { font-size: 12px; font-weight: 500; color: var(--t); }
+.plan-detail { font-size: 11px; color: var(--m); line-height: 1.4; }
+.vs-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; }
+.vs-head { background: var(--p); color: #fff; font-size: 11px; font-weight: 500; padding: 8px 6px; text-align: center; }
+.vs-head.us { background: #0A4A30; color: #7EF0C2; }
+.vs-cell { font-size: 11px; padding: 7px 6px; text-align: center; color: var(--m); border-top: 0.5px solid var(--color-border-tertiary); }
+.vs-lbl { font-size: 11px; padding: 7px 8px; color: var(--t); font-weight: 500; border-top: 0.5px solid var(--color-border-tertiary); }
+.vs-row:nth-child(even) .vs-cell, .vs-row:nth-child(even) .vs-lbl { background: var(--s); }
+.chk { color: var(--a); font-weight: 500; }
+.xmk { color: var(--color-text-danger); }
+.cta { background: var(--p); border-radius: var(--border-radius-lg); padding: 1.25rem 1.5rem; text-align: center; color: #fff; }
+.cta-big { font-size: 20px; font-weight: 500; }
+.cta-sub { font-size: 13px; opacity: 0.7; margin-top: 4px; color: #A7F3D0; }
+</style>
+
+<div class="hdr">
+  <h1>VendorBridge</h1>
+  <p>Procurement &amp; Vendor Management ERP &mdash; Product Proposal</p>
+  <div>
+    <span class="badge b-g">Team BuzzBeatStrong</span>
+    <span class="badge b-o">Odoo Hackathon 2026</span>
+    <span class="badge b-b">8-Hour Virtual Round</span>
+  </div>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="kpi-n">10</div><div class="kpi-l">Screens implemented</div></div>
+  <div class="kpi"><div class="kpi-n">5</div><div class="kpi-l">Differentiators</div></div>
+  <div class="kpi"><div class="kpi-n">4</div><div class="kpi-l">User roles</div></div>
+  <div class="kpi"><div class="kpi-n">8 hrs</div><div class="kpi-l">Build window</div></div>
+</div>
+
+<div class="sec">
+  <div class="sec-title">End-to-end procurement workflow</div>
+  <div class="flow-row">
+    <div class="flow-box">RFQ</div>
+    <span class="flow-arr">›</span>
+    <div class="flow-box">Vendor quotation</div>
+    <span class="flow-arr">›</span>
+    <div class="flow-box">AI comparison</div>
+    <span class="flow-arr">›</span>
+    <div class="flow-box">Approval chain</div>
+    <span class="flow-arr">›</span>
+    <div class="flow-box">PO</div>
+    <span class="flow-arr">›</span>
+    <div class="flow-box">GST invoice</div>
+    <span class="flow-arr">›</span>
+    <div class="flow-box">Email / PDF</div>
+  </div>
+  <div style="font-size:11px; color: var(--m); margin-top:6px;">Dynamic approval routing: auto-approved &lt;₹50K &bull; L1 for ₹50K–2L &bull; L1+L2 above ₹2L</div>
+</div>
+
+<div class="sec">
+  <div class="sec-title">Our 5 differentiators (beyond basic requirements)</div>
+  <div class="diff-grid">
+    <div class="diff-card teal">
+      <div class="diff-num">① AI</div>
+      <div class="diff-title">Quotation scoring engine</div>
+      <div class="diff-desc">Composite score: price (40%) + delivery (20%) + vendor rating (25%) + past performance (15%). Highlights "AI Pick" with breakdown.</div>
+    </div>
+    <div class="diff-card orange">
+      <div class="diff-num o">② Approvals</div>
+      <div class="diff-title">Value-based dynamic routing</div>
+      <div class="diff-desc">Threshold-driven multi-level chain, not a static list. Escalates to backup approver on 24h absence.</div>
+    </div>
+    <div class="diff-card blue">
+      <div class="diff-num b">③ GST</div>
+      <div class="diff-title">India-native tax intelligence</div>
+      <div class="diff-desc">Auto-splits CGST+SGST (intra-state) vs IGST (inter-state). GSTIN format validator. RCM flag. GSTN-compliant invoice PDF.</div>
+    </div>
+    <div class="diff-card pink">
+      <div class="diff-num p">④ Scorecard</div>
+      <div class="diff-title">Vendor health monitor</div>
+      <div class="diff-desc">Auto-computed on-time delivery rate, price competitiveness, dispute rate. Green/Yellow/Red health badge per vendor.</div>
+    </div>
+    <div class="diff-card teal" style="grid-column: 1 / -1;">
+      <div class="diff-num">⑤ Portal</div>
+      <div class="diff-title">Vendor self-service portal</div>
+      <div class="diff-desc">Vendors get a separate login. View RFQs, submit/edit quotations, track PO status, download invoices — eliminating back-and-forth email chains entirely.</div>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec-title">Odoo GitHub repos to clone &amp; study</div>
+  <div class="repo-row">
+    <div class="repo-name">odoo/odoo</div>
+    <div><span class="repo-tag tag-h">HIGH</span></div>
+    <div class="repo-desc">addons/purchase (RFQ→PO state machine) · addons/account (invoice, tax lines) · addons/approvals (multi-approver config) · addons/mail (email notif architecture)</div>
+  </div>
+  <div class="repo-row">
+    <div class="repo-name">odoo/tutorials</div>
+    <div><span class="repo-tag tag-h">HIGH</span></div>
+    <div class="repo-desc">Module structure patterns, ORM model design, form view XML, access control lists &mdash; blueprint for VendorBridge's own module design</div>
+  </div>
+  <div class="repo-row">
+    <div class="repo-name">odoo/technical-training</div>
+    <div><span class="repo-tag tag-m">MED</span></div>
+    <div class="repo-desc">Complete walkthrough for building a custom module from scratch; purchase flow examples; approval workflow state modeling</div>
+  </div>
+  <div class="repo-row">
+    <div class="repo-name">odoo/technical-training-solutions</div>
+    <div><span class="repo-tag tag-m">MED</span></div>
+    <div class="repo-desc">Reference solutions for training exercises; see how RFQ states and purchase order models are concretely implemented</div>
+  </div>
+  <div style="margin-top: 8px; font-size: 11px; color: var(--m); background: var(--s); padding: 8px 10px; border-radius: var(--border-radius-md); font-family: var(--font-mono);">
+    git clone https://github.com/odoo/odoo.git --depth=1 --branch=18.0
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec-title">Competitor gap analysis — what we fill</div>
+  <div class="vs-grid">
+    <div class="vs-head" style="grid-column:1">Feature</div>
+    <div class="vs-head us">VendorBridge</div>
+    <div class="vs-head">Odoo Community</div>
+    <div class="vs-head">Odoo Enterprise</div>
+    <div class="vs-head">Zoho</div>
+    <div class="vs-row" style="display:contents">
+      <div class="vs-lbl">Free / open source</div>
+      <div class="vs-cell chk">✓</div><div class="vs-cell chk">✓</div><div class="vs-cell xmk">✗ paid</div><div class="vs-cell xmk">✗ paid</div>
+    </div>
+    <div class="vs-row" style="display:contents">
+      <div class="vs-lbl">AI quotation scoring</div>
+      <div class="vs-cell chk">✓</div><div class="vs-cell xmk">✗</div><div class="vs-cell xmk">✗</div><div class="vs-cell xmk">✗</div>
+    </div>
+    <div class="vs-row" style="display:contents">
+      <div class="vs-lbl">Dynamic approval routing</div>
+      <div class="vs-cell chk">✓</div><div class="vs-cell xmk">✗ basic</div><div class="vs-cell chk">✓ paid</div><div class="vs-cell xmk">✗ basic</div>
+    </div>
+    <div class="vs-row" style="display:contents">
+      <div class="vs-lbl">GST-native (CGST/SGST)</div>
+      <div class="vs-cell chk">✓</div><div class="vs-cell xmk">✗ plugin</div><div class="vs-cell chk">✓</div><div class="vs-cell chk">✓ paid</div>
+    </div>
+    <div class="vs-row" style="display:contents">
+      <div class="vs-lbl">Vendor self-service portal</div>
+      <div class="vs-cell chk">✓</div><div class="vs-cell xmk">✗</div><div class="vs-cell chk">✓ complex</div><div class="vs-cell xmk">✗ limited</div>
+    </div>
+    <div class="vs-row" style="display:contents">
+      <div class="vs-lbl">Vendor performance scorecard</div>
+      <div class="vs-cell chk">✓ auto</div><div class="vs-cell xmk">✗</div><div class="vs-cell xmk">✗ manual</div><div class="vs-cell xmk">✗</div>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec-title">8-hour build plan</div>
+  <div class="plan-row" style="font-size:11px; font-weight:500; color:var(--m); padding-bottom:4px;">
+    <div>Time</div><div>Phase</div><div>Deliverable</div>
+  </div>
+  <div class="plan-row"><div class="plan-h">H1</div><div class="plan-phase">Setup</div><div class="plan-detail">Repo, Prisma schema, Express boilerplate, React + Tailwind scaffold, JWT auth middleware</div></div>
+  <div class="plan-row"><div class="plan-h">H2</div><div class="plan-phase">Auth + Vendor</div><div class="plan-detail">Login/signup, role-based redirect, vendor CRUD, GSTIN validator</div></div>
+  <div class="plan-row"><div class="plan-h">H3</div><div class="plan-phase">RFQ</div><div class="plan-detail">RFQ form, line items, deadline, vendor multi-select, save &amp; send</div></div>
+  <div class="plan-row"><div class="plan-h">H4</div><div class="plan-phase">Quotations</div><div class="plan-detail">Vendor portal submission, comparison table, AI score computation, "AI Pick" badge</div></div>
+  <div class="plan-row"><div class="plan-h">H5</div><div class="plan-phase">Approvals</div><div class="plan-detail">Approval chain UI, approve/reject, remarks, value-based dynamic routing</div></div>
+  <div class="plan-row"><div class="plan-h">H6</div><div class="plan-phase">PO + Invoice</div><div class="plan-detail">Auto PO number, GST invoice (CGST+SGST/IGST), PDF download, email send</div></div>
+  <div class="plan-row"><div class="plan-h">H7</div><div class="plan-phase">Dashboard + Logs</div><div class="plan-detail">KPI cards, activity timeline, notifications, vendor scorecard cards</div></div>
+  <div class="plan-row"><div class="plan-h">H8</div><div class="plan-phase">Polish + Demo</div><div class="plan-detail">Reports/analytics screen, seed data, demo script rehearsal, README</div></div>
+</div>
+
+<div class="cta">
+  <div class="cta-big">Team BuzzBeatStrong &mdash; Build Smart. Procure Smarter.</div>
+  <div class="cta-sub">VendorBridge &bull; Odoo Hackathon 2026 &bull; Full procurement lifecycle in 8 hours</div>
+</div>

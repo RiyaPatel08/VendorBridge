@@ -1,0 +1,44 @@
+# Reference clones (kept locally for inspiration, never committed)
+clones-odoo/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python (backend: FastAPI + SQLAlchemy)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / frontend (React + Vite + TS)
+node_modules/
+dist/
+build/
+.vite/
+*.local
+
+# Database / local data
+*.sqlite
+*.sqlite3
+*.db
+pgdata/
+
+# Logs
+*.log
+logs/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Git persona helper (keep teammate emails out of history)
+git-personas.ps1

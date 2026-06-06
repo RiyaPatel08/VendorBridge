@@ -1,0 +1,110 @@
+
+
+**Hello and welcome to the Odoo Hackathon.**
+
+We are really excited to have some exceptionally talented developers through this hiring hackathon. We are eager to see what you build.
+
+This hackathon isn't about coding fast. It's about approaching the chosen problem statement thoughtfully and then designing scalable, well-structured, and clear code.
+
+This is also a chance for you to showcase your development skills and logic because we are always on the lookout for talented developers who can join our team.
+
+So, let us understand what we are looking for.
+
+We are looking for someone with solid technical skills, logical thinking, and someone who can work on real-world and dynamic projects.
+
+The things that matter to us the most are:
+
+### Database Design and Setup
+
+We really value projects that model data well and use local databases like MySQL and PostgreSQL instead of relying heavily on Backend-as-a-Service platforms such as Firebase, Supabase, and MongoDB Atlas.
+
+Try to create your project from scratch with minimal use of third-party APIs. This approach helps you avoid dependencies that can impact your project when those third-party platforms have bugs or issues.
+
+### Use of Real-Time and Dynamic Data
+
+Using static JSON for quick prototyping is fine, but not for the final solution.
+
+### Robust Input Validation
+
+User errors must be handled gracefully.
+
+For example, if a user enters an invalid email address, they should receive proper feedback that the entered email is invalid.
+
+### Proper Use of Git
+
+One member managing the Git repository isn't enough.
+
+Version control is a team effort.
+
+### Interactive and Clean UI
+
+The user interface is the face of your project.
+
+Try to create a clean and interactive UI with consistent color schemes and layouts.
+
+Build intuitive navigation menus that make sense and maintain proper spacing and flow.
+
+### Project Presentation
+
+When it comes to presenting your project, everyone should participate because it's not about who speaks well—it's about showing ownership and teamwork.
+
+### Using Trendy Technologies
+
+Using technologies like AI, blockchain, or chatbots is great if they genuinely add value to your solution.
+
+Understand the tools you use.
+
+Don't just copy and paste code. Understand why those tools are being used and what they actually do.
+
+### How We Will Evaluate Your Work
+
+We will evaluate:
+
+* Coding standards
+* Logic
+* Modularity
+* Frontend design
+* Performance
+* Scalability
+* Security
+* Usability
+* Debugging skills
+* Most importantly, database design
+
+We will also look at:
+
+* Your approach to the problem statement
+* Modular architecture
+* Coding patterns
+* Attention to detail
+
+Remember, we are here to hire good developers.
+
+So try to impress your reviewers with strong technical skills.
+
+Go ahead, choose the problem statement, and bring it to life with your amazing ideas.
+
+Collaborate, innovate, and most importantly, enjoy the process.
+
+We can't wait to see what you create.
+
+**Happy hacking!**
+
+---
+
+### Key Takeaway
+
+This speech reveals what Odoo values in candidates:
+
+1. **Strong database design (MySQL/PostgreSQL preferred)**
+2. **Building systems from scratch rather than relying heavily on Firebase/Supabase**
+3. **Backend engineering skills**
+4. **Clean architecture and modular code**
+5. **Input validation and error handling**
+6. **Git collaboration**
+7. **Good UI/UX**
+8. **Scalability and performance**
+9. **Understanding technologies instead of blindly using AI/tools**
+10. **Teamwork and ownership**
+
+For Odoo hiring hackathons, a project with a solid backend, relational database design, proper APIs, validation, and clean architecture will usually score better than a flashy AI project with weak engineering foundations.
